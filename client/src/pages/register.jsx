@@ -1,79 +1,133 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
-import { useCookies } from "react-cookie";
-import { Link, useNavigate } from "react-router-dom";
-function Register() {
-  const [cookies] = useCookies(["cookie-name"]);
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useCookies } from 'react-cookie';
+import '../styles/Auth.css';
+
+const Register = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [cookies, setCookie] = useCookies(['jwt']);
   const navigate = useNavigate();
+
   useEffect(() => {
     if (cookies.jwt) {
-      navigate("/");
+      navigate('/');
     }
-  }, [cookies, navigate]);
+  }, [cookies.jwt, navigate]);
 
-  const [values, setValues] = useState({ email: "", password: "" });
-  const generateError = (error) =>
-    toast.error(error, {
-      position: "bottom-right",
-    });
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const { data } = await axios.post(
-        "http://localhost:4000/register",
-        {
-          ...values,
+      const response = await fetch('http://localhost:4000/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        { withCredentials: true }
-      );
-      if (data) {
-        if (data.errors) {
-          const { email, password } = data.errors;
-          if (email) generateError(email);
-          else if (password) generateError(password);
-        } else {
-          navigate("/");
-        }
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
       }
-    } catch (ex) {
-      console.log(ex);
+
+      setCookie('jwt', data.token, { path: '/' });
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'An error occurred during registration');
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
-    <div className="container">
-      <h2>Register Account</h2>
-      <form onSubmit={(e) => handleSubmit(e)}>
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            onChange={(e) =>
-              setValues({ ...values, [e.target.name]: e.target.value })
-            }
-          />
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h1 className="auth-title">Create Account</h1>
+          <p className="auth-subtitle">Join us to find your perfect opportunity</p>
         </div>
-        <div>
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            placeholder="Password"
-            name="password"
-            onChange={(e) =>
-              setValues({ ...values, [e.target.name]: e.target.value })
-            }
-          />
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="email" className="form-label">Email</label>
+            <input
+              type="email"
+              id="email"
+              className="form-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password" className="form-label">Password</label>
+            <input
+              type="password"
+              id="password"
+              className="form-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Create a password"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              className="form-input"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm your password"
+              required
+            />
+          </div>
+
+          {error && <div className="auth-error">{error}</div>}
+
+          <button 
+            type="submit" 
+            className="auth-button"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="loading-spinner"></span>
+                Creating account...
+              </>
+            ) : (
+              'Create Account'
+            )}
+          </button>
+        </form>
+
+        <div className="auth-footer">
+          Already have an account?{' '}
+          <Link to="/login" className="auth-link">
+            Sign in
+          </Link>
         </div>
-        <button type="submit">Submit</button>
-        <span>
-          Already have an account ?<Link to="/login"> Login</Link>
-        </span>
-      </form>
-      <ToastContainer />
+      </div>
     </div>
   );
-}
+};
 
 export default Register;
