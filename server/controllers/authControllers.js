@@ -44,9 +44,15 @@ module.exports.register = async (req, res, next) => {
       withCredentials: true,
       httpOnly: false,
       maxAge: maxAge * 1000,
+      sameSite: 'lax',
+      secure: false // Mettre à true en production avec HTTPS
     });
 
-    res.status(201).json({ user: user._id, created: true });
+    res.status(201).json({ 
+      user: user._id, 
+      created: true,
+      token: token // Renvoyer le token dans la réponse
+    });
   } catch (err) {
     console.log(err);
     const errors = handleErrors(err);
@@ -60,11 +66,17 @@ module.exports.login = async (req, res) => {
   // Vérification des identifiants admin
   if (email === "admin@gmail.com" && password === "admin") {
     const token = createToken("admin");
-    res.cookie("jwt", token, { httpOnly: false, maxAge: maxAge * 1000 });
+    res.cookie("jwt", token, { 
+      httpOnly: false, 
+      maxAge: maxAge * 1000,
+      sameSite: 'lax',
+      secure: false // Mettre à true en production avec HTTPS
+    });
     res.status(200).json({ 
       user: email, 
       isAdmin: true,
-      status: true 
+      status: true,
+      token: token // Renvoyer le token dans la réponse
     });
     return;
   }
@@ -73,11 +85,20 @@ module.exports.login = async (req, res) => {
   try {
     const user = await User.login(email, password);
     const token = createToken(user._id);
-    res.cookie("jwt", token, { httpOnly: false, maxAge: maxAge * 1000 });
+    
+    // Définir le cookie avec les mêmes options pour tous les utilisateurs
+    res.cookie("jwt", token, { 
+      httpOnly: false, 
+      maxAge: maxAge * 1000,
+      sameSite: 'lax',
+      secure: false // Mettre à true en production avec HTTPS
+    });
+
     res.status(200).json({ 
       user: user._id, 
       isAdmin: false,
-      status: true 
+      status: true,
+      token: token // Renvoyer le token dans la réponse
     });
   } catch (err) {
     const errors = handleErrors(err);

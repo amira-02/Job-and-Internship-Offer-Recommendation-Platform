@@ -5,6 +5,7 @@ import Login from "./pages/login";
 import Register from "./pages/register";
 import AdminPage from "./pages/AdminPage";
 import Cards from "./pages/cards";
+import Offers from "./pages/Offers";
 import "./App.css";
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/cards" element={<Cards />} />
+        <Route path="/offers" element={<Offers />} />
       </Routes>
     </Router>
   );

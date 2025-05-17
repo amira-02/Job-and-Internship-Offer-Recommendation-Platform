@@ -1,0 +1,111 @@
+.auth-illustration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.illustration-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.illustration-container.login {
+  top: 20%;
+  left: 10%;
+}
+
+.illustration-container.register {
+  top: 15%;
+  right: 10%;
+}
+
+.illustration-circle {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  color: var(--color-black);
+  opacity: 0.1;
+}
+
+.illustration-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.illustration-particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--color-black);
+  border-radius: 50%;
+  opacity: 0.1;
+}
+
+/* Animation des particules */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .illustration-container.login {
+    left: 5%;
+  }
+  
+  .illustration-container.register {
+    right: 5%;
+  }
+  
+  .illustration-circle {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .illustration-container {
+    opacity: 0.05;
+  }
+  
+  .illustration-circle {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .illustration-container {
+    display: none;
+  }
+} 

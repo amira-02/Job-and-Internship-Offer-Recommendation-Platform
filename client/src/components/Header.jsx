@@ -7,6 +7,7 @@ function Header() {
   const [cookies, setCookie, removeCookie] = useCookies(['jwt']);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,8 +19,37 @@ function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (cookies.jwt) {
+        try {
+          const response = await fetch("http://localhost:3000", {
+            method: "POST",
+            credentials: 'include',
+          });
+          const data = await response.json();
+          
+          if (data.status) {
+            setIsAdmin(data.isAdmin);
+          } else {
+            setIsAdmin(false);
+            removeCookie('jwt');
+          }
+        } catch (err) {
+          console.error("Erreur de vérification du rôle:", err);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    checkUserRole();
+  }, [cookies.jwt, removeCookie]);
+
   const handleLogout = () => {
     removeCookie('jwt');
+    setIsAdmin(false);
     navigate('/login');
   };
 
@@ -43,11 +73,24 @@ function Header() {
           <Link to="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>
             Home
           </Link>
+          <Link to="/offers" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+            Offres
+          </Link>
           <Link to="/about" className="nav-link" onClick={() => setIsMenuOpen(false)}>
             About Us
           </Link>
           {cookies.jwt ? (
             <>
+              {isAdmin && (
+                <Link to="/admin" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                  Admin Dashboard
+                </Link>
+              )}
+              {!isAdmin && (
+                <Link to="/cards" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                  Mes Recommandations
+                </Link>
+              )}
               <button onClick={handleLogout} className="nav-button logout">
                 Sign Out
               </button>
