@@ -91,6 +91,9 @@ function Header() {
                   Mes Recommandations
                 </Link>
               )}
+              <Link to="/profile" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                Profile
+              </Link>
               <button onClick={handleLogout} className="nav-button logout">
                 Sign Out
               </button>

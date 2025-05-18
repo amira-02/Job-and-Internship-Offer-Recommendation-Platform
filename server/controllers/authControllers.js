@@ -36,8 +36,100 @@ const handleErrors = (err) => {
 
 module.exports.register = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.create({ email, password });
+    // Log the entire request
+    console.log('Registration request received:', {
+      body: req.body,
+      file: req.file ? {
+        fieldname: req.file.fieldname,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        buffer: req.file.buffer ? 'Buffer present' : 'No buffer'
+      } : 'No file'
+    });
+
+    // Récupérer tous les champs du corps de la requête
+    const { 
+      email, 
+      password, 
+      firstName, 
+      lastName, 
+      governorate, 
+      experienceLevel, 
+      employmentTypes, 
+      desiredJobTitle, 
+      selectedDomains, 
+      country, 
+      city, 
+      zipCode, 
+      address, 
+      mobileNumber, 
+      otherPhone,
+      yearsOfExperience,
+      diplomaSpecialty,
+      university,
+      studyStartDate,
+      studyEndDate,
+      isCurrentlyStudying
+    } = req.body;
+
+    // Préparer l'objet utilisateur
+    const userData = {
+      email,
+      password,
+      firstName,
+      lastName,
+      governorate,
+      experienceLevel,
+      employmentTypes,
+      desiredJobTitle,
+      selectedDomains,
+      country,
+      city,
+      zipCode,
+      address,
+      mobileNumber,
+      otherPhone,
+      yearsOfExperience,
+      diplomaSpecialty,
+      university,
+      studyStartDate,
+      studyEndDate,
+      isCurrentlyStudying
+    };
+
+    // Si un CV a été uploadé, l'ajouter aux données utilisateur
+    if (req.file) {
+      console.log('Processing CV upload:', {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        bufferSize: req.file.buffer ? req.file.buffer.length : 0
+      });
+      
+      userData.cv = {
+        data: req.file.buffer,
+        contentType: req.file.mimetype,
+        fileName: req.file.originalname
+      };
+    }
+
+    // Créer l'utilisateur avec toutes les données fournies
+    const user = await User.create(userData);
+    
+    // Vérifier si le CV a été correctement stocké
+    const savedUser = await User.findById(user._id);
+    console.log('User saved with CV:', {
+      userId: savedUser._id,
+      hasCV: !!savedUser.cv,
+      cvDetails: savedUser.cv ? {
+        hasData: !!savedUser.cv.data,
+        dataSize: savedUser.cv.data ? savedUser.cv.data.length : 0,
+        contentType: savedUser.cv.contentType,
+        fileName: savedUser.cv.fileName
+      } : 'No CV'
+    });
+
     const token = createToken(user._id);
 
     res.cookie("jwt", token, {
@@ -45,18 +137,19 @@ module.exports.register = async (req, res, next) => {
       httpOnly: false,
       maxAge: maxAge * 1000,
       sameSite: 'lax',
-      secure: false // Mettre à true en production avec HTTPS
+      secure: false
     });
 
     res.status(201).json({ 
       user: user._id, 
-      created: true,
-      token: token // Renvoyer le token dans la réponse
+      status: true,
+      token: token
     });
   } catch (err) {
-    console.log(err);
+    console.error('Registration error:', err);
     const errors = handleErrors(err);
-    res.json({ errors, created: false });
+    const errorMessage = Object.values(errors).find(msg => msg !== '') || 'Échec de l\'enregistrement.';
+    res.json({ status: false, message: errorMessage, errors });
   }
 };
 
@@ -138,5 +231,80 @@ module.exports.checkUser = async (req, res) => {
     });
   } else {
     res.json({ status: false });
+  }
+};
+
+module.exports.getUserCV = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    console.log('Fetching CV for user:', userId);
+    
+    const user = await User.findById(userId).select('+cv.data'); // Explicitly select cv.data
+    console.log('User found:', {
+      userId: user ? user._id : 'Not found',
+      hasCV: user && user.cv ? 'Yes' : 'No',
+      cvDetails: user && user.cv ? {
+        hasData: !!user.cv.data,
+        dataSize: user.cv.data ? user.cv.data.length : 0,
+        contentType: user.cv.contentType,
+        fileName: user.cv.fileName
+      } : 'No CV details'
+    });
+    
+    if (!user) {
+      console.log('User not found');
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    if (!user.cv || !user.cv.data) {
+      console.log('CV not found or no data:', {
+        hasCV: !!user.cv,
+        hasData: user.cv ? !!user.cv.data : false
+      });
+      return res.status(404).json({ message: 'CV not found' });
+    }
+
+    // Définir les headers pour le téléchargement du fichier
+    res.set({
+      'Content-Type': user.cv.contentType || 'application/pdf',
+      'Content-Disposition': `attachment; filename="${user.cv.fileName || 'cv.pdf'}"`,
+    });
+
+    // Envoyer le fichier
+    res.send(user.cv.data);
+  } catch (err) {
+    console.error('Error fetching CV:', err);
+    res.status(500).json({ message: 'Error fetching CV' });
+  }
+};
+
+module.exports.getUserProfile = async (req, res) => {
+  try {
+    // Le token contient l'ID de l'utilisateur
+    const userId = req.user.id;
+    console.log('Fetching profile for user:', userId);
+
+    // Récupérer l'utilisateur sans le CV (pour éviter de surcharger la réponse)
+    const user = await User.findById(userId).select('-cv.data');
+    
+    if (!user) {
+      console.log('User not found');
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Si l'utilisateur a un CV, inclure juste les métadonnées (pas les données binaires)
+    const userData = user.toObject();
+    if (userData.cv) {
+      userData.cv = {
+        fileName: userData.cv.fileName,
+        contentType: userData.cv.contentType,
+        // Ne pas inclure les données binaires
+      };
+    }
+
+    res.json(userData);
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    res.status(500).json({ message: 'Error fetching user profile' });
   }
 };

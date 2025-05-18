@@ -11,6 +11,77 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Password is Required"],
   },
+  firstName: {
+    type: String,
+    required: [true, "First Name is Required"],
+  },
+  lastName: {
+    type: String,
+    required: [true, "Last Name is Required"],
+  },
+  governorate: {
+    type: String,
+    required: [true, "Governorate is Required"],
+  },
+  experienceLevel: {
+    type: String,
+  },
+  employmentTypes: {
+    type: [String],
+  },
+  desiredJobTitle: {
+    type: String,
+  },
+  selectedDomains: {
+    type: [String],
+  },
+  country: {
+    type: String,
+    default: 'Tunisie',
+    required: [true, "Country is Required"],
+  },
+  city: {
+    type: String,
+    required: [true, "City is Required"],
+  },
+  zipCode: {
+    type: String,
+  },
+  address: {
+    type: String,
+  },
+  mobileNumber: {
+    type: String,
+    required: [true, "Mobile Number is Required"],
+  },
+  otherPhone: {
+    type: String,
+  },
+  yearsOfExperience: {
+    type: String,
+  },
+  diplomaSpecialty: {
+    type: String,
+    required: [true, "Diploma/Specialty is Required"],
+  },
+  university: {
+    type: String,
+    required: [true, "University is Required"],
+  },
+  studyStartDate: {
+    type: String,
+  },
+  studyEndDate: {
+    type: String,
+  },
+  isCurrentlyStudying: {
+    type: Boolean,
+  },
+  cv: {
+    data: Buffer,        // Le fichier CV lui-même
+    contentType: String, // Le type MIME du fichier (pdf, doc, etc.)
+    fileName: String     // Le nom original du fichier
+  },
 });
 
 userSchema.pre("save", async function (next) {

@@ -19,7 +19,7 @@ app.use(
 app.use(cookieParser());
 
 app.use(express.json());
-app.use("/", authRoutes);
+app.use("/api/auth", authRoutes);
 app.use('/api/joboffers', jobOfferRoutes);
 
 mongoose
