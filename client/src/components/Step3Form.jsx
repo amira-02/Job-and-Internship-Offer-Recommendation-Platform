@@ -166,19 +166,7 @@ const Step3Form = ({ formData, onFormChange }) => {
         }}
       />
 
-      <TextField
-        label="Autre téléphone (Optionnel)"
-        name="otherPhone"
-        value={stepData.otherPhone}
-        onChange={handleChange}
-        fullWidth
-        InputProps={{
-          className: 'form-input'
-        }}
-        InputLabelProps={{
-          className: 'form-label'
-        }}
-      />
+     
 
     </Box>
   );

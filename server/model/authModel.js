@@ -1,6 +1,41 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
+// Sous-schéma pour les langues
+const languageSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, "Language name is required"],
+  },
+  level: {
+    type: String,
+    required: [true, "Language level is required"],
+    enum: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+  }
+});
+
+// Sous-schéma pour les certifications
+const certificationSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, "Certification name is required"],
+  },
+  issuer: {
+    type: String,
+    required: [true, "Issuing organization is required"],
+  },
+  date: {
+    type: Date,
+    required: [true, "Certification date is required"],
+  },
+  credentialId: {
+    type: String,
+  },
+  credentialUrl: {
+    type: String,
+  }
+});
+
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -54,9 +89,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Mobile Number is Required"],
   },
-  otherPhone: {
-    type: String,
-  },
   yearsOfExperience: {
     type: String,
   },
@@ -82,6 +114,12 @@ const userSchema = new mongoose.Schema({
     contentType: String, // Le type MIME du fichier (pdf, doc, etc.)
     fileName: String     // Le nom original du fichier
   },
+  languages: [languageSchema],
+  certifications: [certificationSchema],
+  profilePicture: {
+    data: Buffer,         // Les données binaires de l'image
+    contentType: String,  // Le type MIME de l'image (jpeg, png, etc.)
+  }
 });
 
 userSchema.pre("save", async function (next) {

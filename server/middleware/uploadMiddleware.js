@@ -3,14 +3,12 @@ const multer = require('multer');
 // Configure storage to use memory storage instead of disk storage
 const storage = multer.memoryStorage();
 
-// File filter to only allow PDFs and DOCs
+// File filter to allow images
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf' || 
-      file.mimetype === 'application/msword' || 
-      file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+  if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
-    cb(new Error('Only PDF and Word documents are allowed!'), false);
+    cb(new Error('Only image files are allowed!'), false);
   }
 };
 

@@ -280,31 +280,234 @@ module.exports.getUserCV = async (req, res) => {
 
 module.exports.getUserProfile = async (req, res) => {
   try {
-    // Le token contient l'ID de l'utilisateur
     const userId = req.user.id;
-    console.log('Fetching profile for user:', userId);
-
-    // Récupérer l'utilisateur sans le CV (pour éviter de surcharger la réponse)
-    const user = await User.findById(userId).select('-cv.data');
+    const user = await User.findById(userId);
     
     if (!user) {
-      console.log('User not found');
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "Profil utilisateur non trouvé." });
     }
 
-    // Si l'utilisateur a un CV, inclure juste les métadonnées (pas les données binaires)
-    const userData = user.toObject();
-    if (userData.cv) {
-      userData.cv = {
-        fileName: userData.cv.fileName,
-        contentType: userData.cv.contentType,
-        // Ne pas inclure les données binaires
+    // Convertir les données de l'image en base64 si elle existe
+    let profilePictureBase64 = null;
+    if (user.profilePicture && user.profilePicture.data) {
+      profilePictureBase64 = `data:${user.profilePicture.contentType};base64,${user.profilePicture.data.toString('base64')}`;
+    }
+
+    // Retourner les données de l'utilisateur
+    const userProfile = {
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      governorate: user.governorate,
+      mobileNumber: user.mobileNumber,
+      otherPhone: user.otherPhone,
+      desiredJobTitle: user.desiredJobTitle,
+      employmentTypes: user.employmentTypes,
+      selectedDomains: user.selectedDomains,
+      yearsOfExperience: user.yearsOfExperience,
+      diplomaSpecialty: user.diplomaSpecialty,
+      university: user.university,
+      studyStartDate: user.studyStartDate,
+      studyEndDate: user.studyEndDate,
+      isCurrentlyStudying: user.isCurrentlyStudying,
+      country: user.country,
+      city: user.city,
+      zipCode: user.zipCode,
+      address: user.address,
+      cv: user.cv ? { fileName: user.cv.fileName } : null,
+      languages: user.languages || [],
+      certifications: user.certifications || [],
+      profilePicture: profilePictureBase64
+    };
+
+    res.status(200).json(userProfile);
+  } catch (error) {
+    console.error("Erreur lors de la récupération du profil:", error);
+    res.status(500).json({ message: "Erreur interne du serveur." });
+  }
+};
+
+// Nouvelle fonction pour mettre à jour le profil utilisateur
+module.exports.updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.id; // L'ID utilisateur est attaché par requireAuth
+    const updates = req.body; // Les données mises à jour sont dans le corps de la requête
+
+    // Options pour findByIdAndUpdate: new: true retourne le document mis à jour
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, { new: true });
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Utilisateur non trouvé." });
+    }
+
+    // Renvoyer les données de l'utilisateur mis à jour (sans le mot de passe)
+     const userProfile = {
+      _id: updatedUser._id,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      email: updatedUser.email,
+      governorate: updatedUser.governorate,
+      mobileNumber: updatedUser.mobileNumber,
+      otherPhone: updatedUser.otherPhone,
+      desiredJobTitle: updatedUser.desiredJobTitle,
+      employmentTypes: updatedUser.employmentTypes,
+      selectedDomains: updatedUser.selectedDomains,
+      yearsOfExperience: updatedUser.yearsOfExperience,
+      diplomaSpecialty: updatedUser.diplomaSpecialty,
+      university: updatedUser.university,
+      studyStartDate: updatedUser.studyStartDate,
+      studyEndDate: updatedUser.studyEndDate,
+      isCurrentlyStudying: updatedUser.isCurrentlyStudying,
+      country: updatedUser.country,
+      city: updatedUser.city,
+      zipCode: updatedUser.zipCode,
+      address: updatedUser.address,
+      cv: updatedUser.cv ? { fileName: updatedUser.cv.fileName } : null // Informations basiques du CV
+    };
+
+
+    res.status(200).json({ message: "Profil mis à jour avec succès.", user: userProfile });
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du profil:", error);
+    res.status(500).json({ message: "Erreur lors de la mise à jour du profil." });
+  }
+};
+
+// Nouvelle fonction pour ajouter une certification
+module.exports.addCertification = async (req, res) => {
+  try {
+    console.log("Requête reçue pour ajouter une certification:", req.body);
+    const userId = req.user.id; // L'ID utilisateur est attaché par requireAuth
+    console.log("ID utilisateur reçu dans addCertification:", userId);
+    const { name, authority, date } = req.body; // Assurez-vous que les noms correspondent à ceux envoyés par le frontend
+    console.log("Données de certification reçues:", { name, authority, date });
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      console.log("Utilisateur non trouvé avec l'ID:", userId);
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    console.log("Utilisateur trouvé:", user.email);
+
+    // Créer un nouvel objet certification. Utilisez 'issuer' comme défini dans le modèle.
+    const newCertification = {
+      name,
+      issuer: authority, // Mappage du champ 'authority' du frontend vers 'issuer' du backend
+      date: new Date(date) // Convertir la chaîne de date en objet Date
+    };
+
+    console.log("Nouvel objet certification créé:", newCertification);
+
+    // Ajouter la nouvelle certification au tableau
+    user.certifications.push(newCertification);
+
+    console.log("Certifications après ajout:", user.certifications);
+
+    // Sauvegarder l'utilisateur mis à jour
+    console.log("Sauvegarde de l'utilisateur...");
+    await user.save();
+    console.log("Utilisateur sauvegardé avec succès");
+
+    console.log("Certification ajoutée avec succès pour l'utilisateur:", userId);
+
+    // Renvoyer les certifications mises à jour
+    res.status(200).json({ message: "Certification ajoutée avec succès", certifications: user.certifications });
+
+  } catch (error) {
+    console.error("Erreur lors de l'ajout de la certification:", error);
+    // Gérer spécifiquement les erreurs de validation si nécessaire
+    if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map(val => val.message);
+        return res.status(400).json({ message: messages.join(', ') });
+    }
+    res.status(500).json({ message: "Erreur lors de l'ajout de la certification", error: error.message });
+  }
+};
+
+// Nouvelle fonction pour uploader la photo de profil
+module.exports.uploadProfilePicture = async (req, res) => {
+  try {
+    console.log("=== Début de l'upload de la photo de profil ===");
+    console.log("Headers de la requête:", req.headers);
+    console.log("User ID:", req.user.id);
+    console.log("File details:", req.file ? {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      buffer: req.file.buffer ? `Buffer présent (${req.file.buffer.length} bytes)` : 'Pas de buffer'
+    } : 'Pas de fichier');
+
+    if (!req.file) {
+      console.log("Erreur: Aucun fichier n'a été uploadé");
+      return res.status(400).json({ message: "Aucun fichier image n'a été uploadé." });
+    }
+
+    const user = await User.findById(req.user.id);
+    console.log("Utilisateur trouvé:", {
+      userId: user ? user._id : 'Non trouvé',
+      hasProfilePicture: user && user.profilePicture ? 'Oui' : 'Non',
+      email: user ? user.email : 'Non disponible'
+    });
+
+    if (!user) {
+      console.log("Erreur: Utilisateur non trouvé avec l'ID:", req.user.id);
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    // Vérifier le type MIME
+    if (!req.file.mimetype.startsWith('image/')) {
+      console.log("Erreur: Type de fichier invalide:", req.file.mimetype);
+      return res.status(400).json({ message: "Le fichier doit être une image." });
+    }
+
+    // Vérifier la taille du fichier (5MB max)
+    if (req.file.size > 5 * 1024 * 1024) {
+      console.log("Erreur: Fichier trop volumineux:", req.file.size, "bytes");
+      return res.status(400).json({ message: "L'image ne doit pas dépasser 5MB." });
+    }
+
+    try {
+      console.log("Tentative de mise à jour de la photo de profil...");
+      // Mettre à jour le champ profilePicture de l'utilisateur
+      user.profilePicture = {
+        data: req.file.buffer,
+        contentType: req.file.mimetype
       };
+
+      console.log("Sauvegarde de l'utilisateur...");
+      await user.save();
+      console.log("Photo de profil mise à jour avec succès!");
+
+      // Convertir l'image en base64 pour la réponse
+      const base64Image = `data:${user.profilePicture.contentType};base64,${user.profilePicture.data.toString('base64')}`;
+      
+      res.status(200).json({ 
+        message: "Photo de profil mise à jour avec succès",
+        profilePicture: base64Image
+      });
+    } catch (saveError) {
+      console.error("Erreur détaillée lors de la sauvegarde:", {
+        name: saveError.name,
+        message: saveError.message,
+        stack: saveError.stack,
+        code: saveError.code
+      });
+      throw saveError;
     }
 
-    res.json(userData);
-  } catch (err) {
-    console.error('Error fetching user profile:', err);
-    res.status(500).json({ message: 'Error fetching user profile' });
+  } catch (error) {
+    console.error("=== Erreur lors de l'upload de la photo de profil ===");
+    console.error("Type d'erreur:", error.name);
+    console.error("Message d'erreur:", error.message);
+    console.error("Code d'erreur:", error.code);
+    console.error("Stack trace:", error.stack);
+    res.status(500).json({ 
+      message: "Erreur lors de l'upload de la photo de profil", 
+      error: error.message 
+    });
   }
 };
