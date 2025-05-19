@@ -4,6 +4,24 @@ const { register, login, checkUser, getUserCV, getUserProfile, updateUserProfile
 const upload = require('../middleware/uploadMiddleware');
 const { requireAuth } = require('../middleware/authMiddleware');
 const User = require('../model/authModel');
+const multer = require('multer');
+
+// Modifier le middleware upload pour accepter les fichiers PDF et Word
+const cvUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf' || 
+        file.mimetype === 'application/msword' || 
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      cb(null, true);
+    } else {
+      cb(new Error('Seuls les fichiers PDF et Word sont acceptés!'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // Registration route with file upload
 router.post('/register', upload.single('cv'), register);
@@ -71,5 +89,66 @@ router.post("/profile/languages", requireAuth, async (req, res) => {
 
 // Nouvelle route pour uploader la photo de profil
 router.patch('/profile/picture', requireAuth, upload.single('profilePicture'), uploadProfilePicture);
+
+// Route pour uploader le CV
+router.patch('/profile/cv', requireAuth, cvUpload.single('cv'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Aucun fichier n'a été uploadé." });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    // Mettre à jour le CV de l'utilisateur
+    user.cv = {
+      data: req.file.buffer,
+      contentType: req.file.mimetype,
+      fileName: req.file.originalname
+    };
+
+    await user.save();
+
+    res.status(200).json({ 
+      status: true,
+      message: "CV mis à jour avec succès",
+      cv: { fileName: user.cv.fileName }
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'upload du CV:", error);
+    res.status(500).json({ 
+      status: false,
+      message: "Erreur lors de l'upload du CV",
+      error: error.message 
+    });
+  }
+});
+
+// Route pour supprimer le CV
+router.delete('/profile/cv', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    user.cv = undefined;
+    await user.save();
+
+    res.status(200).json({ 
+      status: true,
+      message: "CV supprimé avec succès"
+    });
+  } catch (error) {
+    console.error("Erreur lors de la suppression du CV:", error);
+    res.status(500).json({ 
+      status: false,
+      message: "Erreur lors de la suppression du CV",
+      error: error.message 
+    });
+  }
+});
 
 module.exports = router;

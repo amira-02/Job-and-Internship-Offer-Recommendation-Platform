@@ -48,6 +48,8 @@ import ShareIcon from '@mui/icons-material/Share';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import TwitterIcon from '@mui/icons-material/Twitter';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -56,6 +58,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ProfilePage = () => {
@@ -86,6 +89,10 @@ const ProfilePage = () => {
 
   // Ref pour l'input de fichier caché
   const fileInputRef = React.useRef(null);
+
+  // Ajouter ces états pour gérer le menu du CV
+  const [cvMenuAnchor, setCvMenuAnchor] = useState(null);
+  const [cvFileInputRef] = useState(React.createRef());
 
   const languages = [
     'Français', 'Anglais', 'Arabe', 'Allemand', 'Espagnol', 'Italien', 
@@ -498,6 +505,113 @@ const ProfilePage = () => {
     }
   };
 
+  // Ajouter ces fonctions pour gérer le CV
+  const handleCvMenuOpen = (event) => {
+    setCvMenuAnchor(event.currentTarget);
+  };
+
+  const handleCvMenuClose = () => {
+    setCvMenuAnchor(null);
+  };
+
+  const handleCvFileChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) {
+      console.log('Aucun fichier sélectionné');
+      return;
+    }
+
+    // Vérifications préliminaires
+    if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
+      setError('Le fichier doit être au format PDF ou Word');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Le fichier ne doit pas dépasser 5MB');
+      return;
+    }
+
+    console.log('Fichier CV sélectionné:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      lastModified: new Date(file.lastModified).toISOString()
+    });
+
+    const formData = new FormData();
+    formData.append('cv', file);
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Envoi de la requête au serveur...');
+      const response = await axios({
+        method: 'patch',
+        url: 'http://localhost:3000/api/auth/profile/cv',
+        data: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${cookies.jwt}`
+        },
+        withCredentials: true
+      });
+
+      console.log('Réponse du serveur:', response.data);
+
+      if (response.data.status) {
+        // Mettre à jour les données utilisateur
+        await fetchUserData();
+        setError(null);
+      } else {
+        throw new Error(response.data.message || 'Erreur lors de l\'upload du CV');
+      }
+    } catch (err) {
+      console.error('Erreur détaillée lors de l\'upload du CV:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      
+      setError(
+        err.response?.data?.message || 
+        err.message || 
+        'Erreur lors de l\'upload du CV'
+      );
+    } finally {
+      setLoading(false);
+      handleCvMenuClose();
+    }
+  };
+
+  const handleDeleteCV = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre CV ?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.delete('http://localhost:3000/api/auth/profile/cv', {
+        headers: {
+          'Authorization': `Bearer ${cookies.jwt}`
+        },
+        withCredentials: true
+      });
+
+      if (response.data.status) {
+        await fetchUserData(); // Recharger les données utilisateur
+        setError(null);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la suppression du CV:', err);
+      setError(err.response?.data?.message || 'Erreur lors de la suppression du CV');
+    } finally {
+      setLoading(false);
+      handleCvMenuClose();
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ 
@@ -861,47 +975,62 @@ const ProfilePage = () => {
                   <Divider sx={{ my: 2, borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08) }} />
                   <Stack direction="row" spacing={2} justifyContent="center">
                     <Tooltip title="LinkedIn">
-                      <IconButton sx={{ color: '#0a66c2' }}>
+                      <IconButton 
+                        sx={{ 
+                          color: '#0a66c2',
+                          '&:hover': { bgcolor: alpha('#0a66c2', 0.1) }
+                        }}
+                      >
                         <LinkedInIcon />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="GitHub">
-                      <IconButton sx={{ color: '#181717' }}>
+                      <IconButton 
+                        sx={{ 
+                          color: '#181717',
+                          '&:hover': { bgcolor: alpha('#181717', 0.1) }
+                        }}
+                      >
                         <GitHubIcon />
                       </IconButton>
                     </Tooltip>
-                     <Tooltip title="GitHub">
-                      <IconButton sx={{ color: '#181717' }}>
-                        <GitHubIcon />
-                      </IconButton>
-                    </Tooltip>
-                    {/* <Tooltip title="Instagram">
-                      <IconButton sx={{ color: '#E4405F' }}>
+                    <Tooltip title="Instagram">
+                      <IconButton 
+                        sx={{ 
+                          color: '#E4405F',
+                          '&:hover': { bgcolor: alpha('#E4405F', 0.1) }
+                        }}
+                      >
                         <InstagramIcon />
                       </IconButton>
                     </Tooltip>
-                     <Tooltip title="Twitter">
-                      <IconButton sx={{ color: '#1DA1F2' }}>
+                    <Tooltip title="Twitter">
+                      <IconButton 
+                        sx={{ 
+                          color: '#1DA1F2',
+                          '&:hover': { bgcolor: alpha('#1DA1F2', 0.1) }
+                        }}
+                      >
                         <TwitterIcon />
                       </IconButton>
-                    </Tooltip> */}
+                    </Tooltip>
                   </Stack>
                 </Paper>
 
                 {/* CV Section */}
-                {userData?.cv && (
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      borderRadius: 4,
-                      bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
-                      border: '1px solid',
-                      borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    <Stack spacing={2}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 4,
+                    bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
+                    border: '1px solid',
+                    borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <Stack spacing={2}>
+                    <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
                       <Stack direction="row" spacing={2} alignItems="center">
                         <Box sx={{
                           p: 1.5,
@@ -916,7 +1045,21 @@ const ProfilePage = () => {
                           CV
                         </Typography>
                       </Stack>
-                      <Divider sx={{ borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08) }} />
+                      {userData?.cv?.fileName && (
+                        <IconButton 
+                          onClick={handleCvMenuOpen}
+                          sx={{ 
+                            color: darkMode ? alpha('#fff', 0.7) : alpha('#000', 0.5),
+                            '&:hover': { color: '#1976d2' }
+                          }}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      )}
+                    </Stack>
+                    <Divider sx={{ borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08) }} />
+                    
+                    {userData?.cv?.fileName ? (
                       <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
                         <Typography 
                           variant="body2" 
@@ -929,23 +1072,97 @@ const ProfilePage = () => {
                         >
                           {userData.cv.fileName}
                         </Typography>
-                        <Tooltip title="Télécharger le CV">
-                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                            <IconButton 
-                              onClick={handleDownloadCV} 
-                              sx={{ 
-                                color: '#1976d2',
-                                bgcolor: alpha('#1976d2', 0.1),
-                                '&:hover': { bgcolor: alpha('#1976d2', 0.2) }
-                              }}
-                            >
-                              <DownloadIcon />
-                            </IconButton>
-                          </motion.div>
-                        </Tooltip>
+                        <Stack direction="row" spacing={1}>
+                          <Tooltip title="Télécharger le CV">
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                              <IconButton 
+                                onClick={handleDownloadCV} 
+                                sx={{ 
+                                  color: '#1976d2',
+                                  bgcolor: alpha('#1976d2', 0.1),
+                                  '&:hover': { bgcolor: alpha('#1976d2', 0.2) }
+                                }}
+                              >
+                                <DownloadIcon />
+                              </IconButton>
+                            </motion.div>
+                          </Tooltip>
+                        </Stack>
                       </Stack>
-                    </Stack>
-                  </Paper>
+                    ) : (
+                      <Stack spacing={2}>
+                        <Button
+                          variant="outlined"
+                          startIcon={<AddIcon />}
+                          onClick={() => cvFileInputRef.current?.click()}
+                          sx={{
+                            borderColor: '#1976d2',
+                            color: '#1976d2',
+                            '&:hover': {
+                              borderColor: '#1976d2',
+                              bgcolor: alpha('#1976d2', 0.1)
+                            }
+                          }}
+                        >
+                          Ajouter un CV
+                        </Button>
+                        <Typography variant="caption" sx={{ color: darkMode ? alpha('#fff', 0.7) : alpha('#000', 0.6) }}>
+                          Formats acceptés : PDF, DOC, DOCX (max 5MB)
+                        </Typography>
+                      </Stack>
+                    )}
+                  </Stack>
+                </Paper>
+
+                {/* Input caché pour l'upload de CV */}
+                <input
+                  type="file"
+                  ref={cvFileInputRef}
+                  onChange={handleCvFileChange}
+                  accept=".pdf,.doc,.docx"
+                  style={{ display: 'none' }}
+                />
+
+                {/* Menu pour les actions du CV - uniquement visible si un CV existe */}
+                {userData?.cv?.fileName && (
+                  <Menu
+                    anchorEl={cvMenuAnchor}
+                    open={Boolean(cvMenuAnchor)}
+                    onClose={handleCvMenuClose}
+                    TransitionComponent={Fade}
+                    PaperProps={{
+                      elevation: 0,
+                      sx: {
+                        mt: 1.5,
+                        borderRadius: 3,
+                        bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
+                        backdropFilter: 'blur(12px)',
+                        border: '1px solid',
+                        borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
+                        boxShadow: '0 8px 40px rgba(0,0,0,0.1)',
+                        '& .MuiMenuItem-root': {
+                          px: 3,
+                          py: 1.5,
+                          color: darkMode ? '#e0e0e0' : '#4a4a4a',
+                          '&:hover': {
+                            bgcolor: darkMode ? alpha('#1976d2', 0.2) : alpha('#1976d2', 0.1)
+                          }
+                        }
+                      }
+                    }}
+                  >
+                    <MenuItem onClick={() => {
+                      handleCvMenuClose();
+                      cvFileInputRef.current?.click();
+                    }}>
+                      <EditIcon sx={{ mr: 2, color: '#1976d2' }} />
+                      Changer le CV
+                    </MenuItem>
+                    <MenuItem onClick={handleDeleteCV} sx={{ color: '#d32f2f' }}>
+                      <DeleteIcon sx={{ mr: 2, color: '#d32f2f' }} />
+                      Supprimer le CV
+                    </MenuItem>
+                  </Menu>
                 )}
 
                 {/* Contact Information */}
@@ -1273,29 +1490,7 @@ const ProfilePage = () => {
                       )}
                   </Paper>
 
-                 {/* Section Centre d'intérêts */}
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      borderRadius: 4,
-                      bgcolor: darkMode ? alpha('#fff', 0.05) : '#fff',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid',
-                      borderColor: darkMode ? alpha('#fff', 0.1) : alpha('#000', 0.1),
-                    }}
-                  >
-                     <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                       <Typography variant="h6" sx={{ color: darkMode ? 'white' : 'inherit' }}>Centre d'intérêts</Typography>
-                       <Button size="small" startIcon={<AddIcon />} onClick={() => { /* TODO: Implement add interest */ }}>
-                         Ajouter un centre d'intérêt
-                       </Button>
-                     </Stack>
-                      <Divider sx={{ my: 2, borderColor: darkMode ? alpha('#fff', 0.1) : alpha('#000', 0.1) }} />
-
-                      {/* TODO: Implement display for interests */}
-
-                  </Paper>
+               
               </Stack>
             </Grid>
           </Grid>
