@@ -127,12 +127,12 @@ const FilterSidebar = ({ offers, onFilterChange }) => {
       <Collapse in={open || !isMobile} timeout="auto" unmountOnExit={isMobile}>
         <Box sx={{ 
           display: 'flex',
-          flexDirection: 'column',
-          gap: 3,
-          flex: 1
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: { xs: 3, md: 2 },
+          flex: 1,
+          alignItems: 'center'
         }}>
           <TextField
-            fullWidth
             variant="outlined"
             placeholder="Rechercher un emploi..."
             value={searchTerm}
@@ -145,6 +145,7 @@ const FilterSidebar = ({ offers, onFilterChange }) => {
               ),
             }}
             sx={{
+              flex: 1,
               '& .MuiOutlinedInput-root': {
                 borderRadius: '8px',
                 '&:hover fieldset': {
@@ -154,7 +155,9 @@ const FilterSidebar = ({ offers, onFilterChange }) => {
             }}
           />
 
-          <FormControl fullWidth>
+          <FormControl 
+            sx={{ minWidth: 120, flex: '0 0 auto' }}
+          >
             <InputLabel>Ville</InputLabel>
             <Select
               multiple
@@ -178,9 +181,9 @@ const FilterSidebar = ({ offers, onFilterChange }) => {
             </Select>
           </FormControl>
 
-          <Divider />
-
-          <FormControl fullWidth>
+          <FormControl 
+            sx={{ minWidth: 120, flex: '0 0 auto' }}
+          >
             <InputLabel>Domaine</InputLabel>
             <Select
               multiple

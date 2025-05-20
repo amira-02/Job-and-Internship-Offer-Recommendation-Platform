@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCookies } from 'react-cookie';
 import Header from '../components/Header';
@@ -6,6 +6,37 @@ import '../styles/Home.css';
 
 const Home = () => {
   const [cookies] = useCookies(['jwt']);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const reveals = document.querySelectorAll('.reveal');
+      
+      reveals.forEach(element => {
+        const windowHeight = window.innerHeight;
+        const elementTop = element.getBoundingClientRect().top;
+        const elementVisible = 150;
+        
+        if (elementTop < windowHeight - elementVisible) {
+          element.classList.add('active');
+        }
+      });
+    };
+
+    const addRevealClass = () => {
+      const elements = document.querySelectorAll('.feature-card, .section-title, .section-subtitle, .hero-icons');
+      elements.forEach(element => {
+        element.classList.add('reveal');
+      });
+    };
+
+    addRevealClass();
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   return (
     <div className="home">
@@ -18,6 +49,13 @@ const Home = () => {
           <p className="hero-subtitle">
             Discover personalized job and internship recommendations based on your skills, interests, and career goals.
           </p>
+          <div className="hero-icons">
+            <div className="hero-icon-circle"><img src="/path/to/icon1.png" alt="Icon 1" /></div>
+            <div className="hero-icon-circle"><img src="/path/to/icon2.png" alt="Icon 2" /></div>
+            <div className="hero-icon-circle"><img src="/path/to/icon3.png" alt="Icon 3" /></div>
+            <div className="hero-icon-circle"><img src="/path/to/icon4.png" alt="Icon 4" /></div>
+            <div className="hero-icon-circle"><img src="/path/to/icon5.png" alt="Icon 5" /></div>
+          </div>
           <div className="hero-buttons">
             {!cookies.jwt ? (
               <>

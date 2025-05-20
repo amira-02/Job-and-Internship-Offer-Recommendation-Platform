@@ -1264,7 +1264,7 @@ const ProfilePage = () => {
                     </Typography>
                     <Tooltip title="Ajouter une formation">
                       <motion.dev whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                        <IconButton 
+                        {/* <IconButton 
                           sx={{ 
                             color: '#1976d2',
                             bgcolor: alpha('#1976d2', 0.1),
@@ -1272,7 +1272,7 @@ const ProfilePage = () => {
                           }}
                         >
                           <AddIcon />
-                        </IconButton>
+                        </IconButton> */}
                       </motion.dev>
                     </Tooltip>
                   </Stack>
