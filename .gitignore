@@ -44,3 +44,7 @@ ENV/
 # System Files
 .DS_Store
 Thumbs.db 
+
+# Custom ignores for nested structure
+/scraper/
+/Job-and-Internship-Offer-Recommendation-Platform/ 
