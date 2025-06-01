@@ -3,16 +3,18 @@
   top: 0;
   left: 0;
   right: 0;
-  background: rgba(255, 255, 255, 0.98);
+  background: transparent;
   backdrop-filter: blur(10px);
   z-index: 1000;
   transition: all var(--transition-normal);
-  border-bottom: 1px solid var(--color-gray-200);
 }
 
 .header.scrolled {
-  background: rgba(255, 255, 255, 0.98);
+  background: transparent;
   box-shadow: var(--shadow-sm);
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .header-container {
@@ -22,6 +24,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: transparent;
 }
 
 .logo {

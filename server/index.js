@@ -1,55 +1,68 @@
 const express = require("express");
-const cors = require("cors");
 const mongoose = require("mongoose");
-const authRoutes = require("./routes/authRoutes");
+const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const jobOfferRoutes = require('./routes/jobOfferRoutes');
+const authRoutes = require("./routes/authRoutes");
+const employerRoutes = require("./routes/employerRoutes");
+const jobOfferRoutes = require("./routes/jobOfferRoutes");
+const multer = require("multer");
+const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(
-  cors({
-    origin: ['http://localhost:3001', 'http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-  })
-);
-app.use(cookieParser());
+// Middleware de log pour voir les requêtes entrantes
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  next();
+});
 
+// Configuration de CORS
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3001'], // Ajouter le port 3001
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Middleware
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-app.use("/api/auth", authRoutes);
-app.use('/api/joboffers', jobOfferRoutes);
 
+// Configuration de Multer pour le stockage des fichiers
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB max
+  }
+});
+
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/employer", employerRoutes);
+app.use("/api/joboffers", jobOfferRoutes);
+
+// Route de test
+app.get("/", (req, res) => {
+  res.json("Hello");
+});
+
+// Connexion à MongoDB
 mongoose
-  .connect("mongodb://localhost:27017/jobmatcher", {
+  .connect("mongodb://127.0.0.1:27017/jobmatcher", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
   .then(() => {
-    console.log("DB Connetion Successfull");
+    console.log("Connected to MongoDB - Database: jobmatcher");
   })
   .catch((err) => {
-    console.log(err.message);
-  });
-
-// Route de test
-app.get('/', (req, res) => {
-  res.json({ message: 'API des offres d\'emploi opérationnelle' });
-});
-
-// Gestion des erreurs
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    message: 'Une erreur est survenue',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Erreur interne du serveur'
-  });
+    console.error("MongoDB connection error:", err);
 });
 
 // Démarrage du serveur
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });

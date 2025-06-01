@@ -1,0 +1,269 @@
+.employer-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Align items to the top */
+  padding: 2rem;
+  background: #f0f2f5; /* Lighter background */
+}
+
+.employer-card {
+  width: 100%;
+  max-width: 900px; /* Increased max-width for two columns */
+  padding: 2.5rem; /* Increased padding */
+  border-radius: 8px; /* Slightly smaller border-radius */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Softer shadow */
+  background: white;
+  display: flex; /* Use flexbox for internal layout */
+  flex-direction: column; /* Stack header, main content, and footer */
+}
+
+.header-section {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.employer-card h1 {
+  text-align: center;
+  margin-bottom: 0.5rem;
+  color: #007bff; /* Blue color for header */
+  font-size: 2.2rem; /* Slightly larger font size */
+  font-weight: 600;
+}
+
+.subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.job-search-type {
+  margin-top: 1rem;
+}
+
+.job-search-type span {
+  margin-right: 1rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.main-content {
+  display: flex;
+  gap: 3rem; /* Increased gap between columns */
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  align-items: flex-start; /* Align items to the top */
+  margin-bottom: 2rem;
+}
+
+.left-column {
+  flex: 1; /* Allow the left column to grow */
+  min-width: 300px; /* Minimum width */
+  display: flex;
+  flex-direction: column;
+  gap: 2rem; /* Space between sections in the left column */
+}
+
+.benefits-section {
+  background-color: #e9f5ff; /* Light blue background */
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #b3e0ff; /* Light blue border */
+}
+
+.benefits-title {
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #0056b3; /* Darker blue color */
+}
+
+.benefits-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.benefits-section li {
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.social-login-section {
+  text-align: center;
+  padding-top: 0;
+  border-top: none;
+  margin-top: 0;
+}
+
+.social-login-text {
+  margin-bottom: 1rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.facebook-button {
+  width: 100%;
+  height: 45px;
+  border-radius: 4px; /* Slightly smaller border-radius */
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: #4267B2; /* Facebook blue */
+  border-color: #4267B2;
+  color: white;
+}
+
+.facebook-button:hover {
+  background-color: #365899; /* Darker Facebook blue */
+  border-color: #365899;
+  color: white;
+}
+
+.jobseeker-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+  text-align: center;
+  color: #555;
+}
+
+.jobseeker-text {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.jobseeker-section a {
+  color: #007bff; /* Blue link color */
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.jobseeker-section a:hover {
+  text-decoration: underline;
+}
+
+.right-column {
+  flex: 2; /* Allow the right column to take more space */
+  min-width: 400px; /* Minimum width */
+  width: 100%;
+}
+
+.employer-form .form-row {
+  display: flex;
+  gap: 1.5rem; /* Space between form items in a row */
+  flex-wrap: wrap; /* Allow wrapping of form items */
+}
+
+.employer-form .form-item-half {
+  flex: 1; /* Allow form items to take half space */
+  min-width: 200px; /* Minimum width for form items */
+}
+
+.employer-form .ant-form-item {
+  margin-bottom: 1.5rem;
+}
+
+.employer-form .ant-input,
+.employer-form .ant-input-password,
+.employer-form .ant-select-selector,
+.employer-form .ant-input-affix-wrapper,
+.employer-form .ant-picker {
+  border-radius: 4px; /* Smaller border-radius for inputs */
+}
+
+.employer-form .ant-input:hover,
+.employer-form .ant-input-password:hover,
+.employer-form .ant-select-selector:hover,
+.employer-form .ant-input-affix-wrapper:hover,
+.employer-form .ant-picker:hover {
+  border-color: #007bff; /* Blue border on hover */
+}
+
+.employer-form .ant-input:focus,
+.employer-form .ant-input-password:focus,
+.employer-form .ant-select-selector:focus,
+.employer-form .ant-input-affix-wrapper:focus,
+.employer-form .ant-picker:focus {
+  border-color: #007bff; /* Blue border on focus */
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2); /* Blue box shadow on focus */
+}
+
+/* Style for the Register button */
+.register-button {
+  width: 100%;
+  height: 45px;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  background-color: #ff9800; /* Orange color */
+  border-color: #ff9800;
+  color: white;
+}
+
+.register-button:hover {
+  background-color: #f57c00; /* Darker orange on hover */
+  border-color: #f57c00;
+  color: white;
+}
+
+/* Style for the black buttons (like Facebook) - keeping this specific */
+.facebook-button {
+  background-color: black !important;
+  border-color: black !important;
+  color: white !important;
+}
+
+.facebook-button:hover {
+  background-color: #333 !important; /* Darken slightly on hover */
+  border-color: #333 !important;
+  color: white !important;
+}
+
+.footer-link {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+  color: #666;
+}
+
+.footer-link a {
+  color: #007bff; /* Blue link color */
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.footer-link a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column; /* Stack columns on smaller screens */
+    gap: 1.5rem;
+  }
+
+  .left-column,
+  .right-column {
+    min-width: 100%;
+  }
+
+  .employer-form .form-row {
+    flex-direction: column; /* Stack form items in rows on smaller screens */
+    gap: 0;
+  }
+
+  .employer-form .form-item-half {
+    min-width: 100%;
+  }
+
+  .employer-card {
+    padding: 1.5rem;
+  }
+
+  .employer-card h1 {
+    font-size: 2rem;
+  }
+} 

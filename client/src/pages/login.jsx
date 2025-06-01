@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Header from "../components/Header";
 import "../styles/Auth.css";
 
-const Login = () => {
+function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,10 +48,10 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/login", {
-        method: "POST",
+      const response = await fetch('http://127.0.0.1:3000/api/auth/login', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({ email, password }),
@@ -59,21 +59,17 @@ const Login = () => {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      if (data.errors) {
-        throw new Error(Object.values(data.errors).join(", "));
-      }
-
-      // Vérifier si la connexion a réussi
-      if (data.status && data.token) {
+      if (response.ok) {
+        // Sauvegarder le token dans le localStorage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
         // Définir le cookie avec le token reçu
         setCookie("jwt", data.token, { 
           path: "/",
           sameSite: 'lax',
-          secure: false // Mettre à true en production avec HTTPS
+          secure: false,
+          maxAge: 3 * 24 * 60 * 60 // 3 jours
         });
         
         toast.success("Connexion réussie !", {
@@ -87,30 +83,53 @@ const Login = () => {
           theme: "colored",
         });
         
-        // Rediriger vers la page appropriée selon le rôle
-        setTimeout(() => {
-          if (data.isAdmin) {
-            navigate("/admin");
-          } else {
-            navigate("/");
-          }
-        }, 1000);
+        // Rediriger en fonction du rôle ou du flag admin
+        if (data.isAdmin) {
+          navigate('/admin');
+        } else if (data.user.role === 'employer') {
+          navigate('/employer/dashboard');
+        } else if (data.user.role === 'candidate') {
+          navigate('/profile');
+        } else {
+          navigate('/'); // Redirection par défaut si le rôle n'est pas reconnu
+        }
       } else {
-        throw new Error("Échec de la connexion");
+        toast.error(data.message || 'Échec de la connexion', {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
       }
-    } catch (err) {
-      console.error("Erreur de connexion:", err);
-      setError(err.message || "Une erreur est survenue lors de la connexion");
-      toast.error(err.message || "Une erreur est survenue lors de la connexion", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
+    } catch (error) {
+      console.error('Erreur de connexion:', error);
+      if (error.message === 'Failed to fetch' || error.message.includes('ERR_CONNECTION_REFUSED')) {
+        toast.error('Impossible de se connecter au serveur. Veuillez vérifier que le serveur est en cours d\'exécution et accessible sur 127.0.0.1:3000.', {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      } else {
+        toast.error('Une erreur est survenue lors de la connexion', {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -267,6 +286,6 @@ const Login = () => {
       <ToastContainer />
     </div>
   );
-};
+}
 
 export default Login;

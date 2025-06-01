@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useCookies } from 'react-cookie';
 import Header from '../components/Header';
 import '../styles/Home.css';
+import '../styles/CommentsSection.css';
+import heroImage from '../assets/images/3d-illustration-man-with-megaphone-his-hand-removebg-preview.png';
 
 const Home = () => {
   const [cookies] = useCookies(['jwt']);
@@ -20,6 +22,11 @@ const Home = () => {
           element.classList.add('active');
         }
       });
+
+      const scrollPosition = window.scrollY;
+      const transitionRange = 800;
+      const opacity = Math.min(1, scrollPosition / transitionRange);
+      document.body.style.setProperty('--second-bg-opacity', opacity);
     };
 
     const addRevealClass = () => {
@@ -43,19 +50,13 @@ const Home = () => {
       <Header />
       <section className="hero">
         <div className="hero-content">
-          <h1 className="hero-title">
+          <div className="hero-text">
+            <h5 className="hero-title">
             Find Your Perfect Job or Internship
-          </h1>
+            </h5>
           <p className="hero-subtitle">
             Discover personalized job and internship recommendations based on your skills, interests, and career goals.
           </p>
-          <div className="hero-icons">
-            <div className="hero-icon-circle"><img src="/path/to/icon1.png" alt="Icon 1" /></div>
-            <div className="hero-icon-circle"><img src="/path/to/icon2.png" alt="Icon 2" /></div>
-            <div className="hero-icon-circle"><img src="/path/to/icon3.png" alt="Icon 3" /></div>
-            <div className="hero-icon-circle"><img src="/path/to/icon4.png" alt="Icon 4" /></div>
-            <div className="hero-icon-circle"><img src="/path/to/icon5.png" alt="Icon 5" /></div>
-          </div>
           <div className="hero-buttons">
             {!cookies.jwt ? (
               <>
@@ -71,6 +72,74 @@ const Home = () => {
                 View Recommendations
               </Link>
             )}
+            </div>
+          </div>
+          <div className="hero-image">
+            <img 
+              src={heroImage}
+              alt="Career opportunities illustration" 
+              className="hero-illustration"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Workflow Section */}
+      <section className="workflow-section">
+        <div className="workflow-container">
+          <h2 className="section-title">How It Works</h2>
+          <p className="section-subtitle">
+            Follow these simple steps to find your perfect job or internship opportunity
+          </p>
+          
+          <div className="timeline">
+
+            <div className="timeline-item left reveal">
+              <div className="timeline-content">
+                <div className="step-icon">📝</div>
+                <h3 className="step-title">Create Your Profile</h3>
+                <p className="step-description">
+                  Sign up and create your professional profile. Add your skills, experience, and career goals to help us understand your preferences.
+                </p>
+              </div>
+            </div>
+
+            <div className="timeline-item right reveal">
+              <div className="timeline-content">
+                <div className="step-icon">📄</div>
+                <h3 className="step-title">Upload Your CV</h3>
+                <p className="step-description">
+                  Upload your CV or resume. Our system will analyze your qualifications and experience to better understand your profile.
+                </p>
+              </div>
+            </div>
+
+            <div className="timeline-item left reveal">
+              <div className="timeline-content">
+                <div className="step-icon">🎯</div>
+                <h3 className="step-title">Get Personalized Recommendations</h3>
+                <p className="step-description">
+                  Receive tailored job and internship recommendations that match your skills, experience, and career aspirations.
+                </p>
+              </div>
+            </div>
+
+            <div className="timeline-item right reveal">
+              <div className="timeline-content">
+                <div className="step-icon">💼</div>
+                <h3 className="step-title">Apply to Opportunities</h3>
+                <p className="step-description">
+                  Browse through your personalized recommendations and apply directly to the opportunities that interest you.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="workflow-cta">
+            <Link to="/register" className="workflow-button">
+              Start Your Journey
+            </Link>
           </div>
         </div>
       </section>
@@ -106,6 +175,47 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Section Commentaires */}
+      <section className="comments-section">
+        <div className="comments-container">
+          <div className="comments-content">
+            <div className="comments-intro">
+              <p className="comments-subtitle reveal">Leave a Comment</p>
+              <h2 className="comments-title reveal">Share your thoughts with us.</h2>
+              {/* Optional: Add some descriptive text here */}
+            </div>
+            <div className="comment-form-container">
+               <h3 className="form-title">Send us a Message</h3> {/* Changed form title */} 
+              <div className="comment-form">
+                <div className="form-group">
+                  <label htmlFor="fullName" className="comment-label">Full Name*</label>
+                  <input type="text" id="fullName" className="form-input" placeholder="Enter your full name" />
+                </div>
+                 <div className="form-group">
+                  <label htmlFor="emailAddress" className="comment-label">Email Address*</label>
+                  <input type="email" id="emailAddress" className="form-input" placeholder="Enter your email address" />
+                </div>
+                 <div className="form-group">
+                  <label htmlFor="comment-textarea" className="comment-label">Message*</label> {/* Label text changed */} 
+                <textarea
+                  id="comment-textarea" // Added ID for label association
+                  className="comment-textarea form-input" // Added form-input class
+                  placeholder="Type your message" // Changed placeholder text
+                  rows="6" // Increased rows for a larger textarea
+                ></textarea>
+                 </div>
+                <button className="comment-submit-button primary">Send Message</button> {/* Changed button text */} 
+              </div>
+               {/* Placeholder for comments list - will style later if needed */}
+               {/* <div className="comments-list">
+                <p className="no-comments">No comments yet. Be the first to leave one!</p>
+              </div> */}
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 };

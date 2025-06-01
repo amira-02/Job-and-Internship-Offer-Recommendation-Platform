@@ -35,7 +35,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import LightbulbOutlineIcon from '@mui/icons-material/LightbulbOutline';
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
 import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -59,6 +66,7 @@ import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ProfilePage = () => {
@@ -84,7 +92,7 @@ const ProfilePage = () => {
   const [newCertification, setNewCertification] = useState({
     name: '',
     authority: '',
-    date: '' // Stockera la date sous forme de chaîne (YYYY-MM-DD)
+    date: ''
   });
 
   // Ref pour l'input de fichier caché
@@ -93,6 +101,10 @@ const ProfilePage = () => {
   // Ajouter ces états pour gérer le menu du CV
   const [cvMenuAnchor, setCvMenuAnchor] = useState(null);
   const [cvFileInputRef] = useState(React.createRef());
+
+  // Ajouter ces états dans le composant ProfilePage
+  const [openCvAnalysis, setOpenCvAnalysis] = useState(false);
+  const [cvAnalysis, setCvAnalysis] = useState(null);
 
   const languages = [
     'Français', 'Anglais', 'Arabe', 'Allemand', 'Espagnol', 'Italien', 
@@ -484,7 +496,8 @@ const ProfilePage = () => {
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'cover'
+            objectFit: 'cover',
+            transition: 'all 0.3s ease'
           }}
         />
       );
@@ -610,6 +623,68 @@ const ProfilePage = () => {
       setLoading(false);
       handleCvMenuClose();
     }
+  };
+
+  const handleOpenCvAnalysis = async () => {
+    try {
+      console.log("Vérification du CV...", userData?.cv);
+    
+    if (!userData?.cv) {
+        setError("Aucun CV n'a été téléchargé. Veuillez d'abord télécharger un CV.");
+        return;
+    }
+
+            setLoading(true);
+      const formData = new FormData();
+            
+      // Récupérer le CV depuis le serveur
+      try {
+            const cvResponse = await axios.get(`http://localhost:3000/api/auth/cv/${userData._id}`, {
+                responseType: 'blob',
+          headers: {
+            'Authorization': `Bearer ${cookies.jwt}`
+          },
+          withCredentials: true
+            });
+
+        // Créer un fichier à partir du blob
+        const cvFile = new File([cvResponse.data], userData.cv.fileName, {
+          type: cvResponse.headers['content-type']
+        });
+        
+            formData.append('file', cvFile);
+      } catch (err) {
+        console.error("Erreur lors de la récupération du CV:", err);
+        setError("Erreur lors de la récupération du CV. Veuillez réessayer.");
+        return;
+      }
+
+      console.log("Envoi du CV pour analyse...");
+      const response = await axios.post('http://localhost:8080/analyze-cv', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      console.log("Réponse de l'analyse:", response.data);
+            
+      if (response.data.status === 'success') {
+        setCvAnalysis(response.data.cv.analysis);
+                setOpenCvAnalysis(true);
+            } else {
+        setError("Erreur lors de l'analyse du CV");
+            }
+        } catch (err) {
+      console.error('Erreur lors de l\'analyse du CV:', err);
+      setError(err.response?.data?.detail || "Erreur lors de l'analyse du CV");
+        } finally {
+            setLoading(false);
+        }
+  };
+
+  const handleCloseCvAnalysis = () => {
+    setOpenCvAnalysis(false);
+    setCvAnalysis(null);
   };
 
   if (loading) {
@@ -1060,19 +1135,21 @@ const ProfilePage = () => {
                     <Divider sx={{ borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08) }} />
                     
                     {userData?.cv?.fileName ? (
-                      <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-                        <Typography 
-                          variant="body2" 
+                      <Stack direction="row" spacing={1}>
+                        <Tooltip title="Voir l'analyse du CV">
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                            <IconButton 
+                              onClick={handleOpenCvAnalysis}
                           sx={{ 
-                            color: darkMode ? alpha('#fff', 0.7) : '#4a4a4a',
-                            maxWidth: '70%',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
+                                color: '#1976d2',
+                                bgcolor: alpha('#1976d2', 0.1),
+                                '&:hover': { bgcolor: alpha('#1976d2', 0.2) }
                           }}
                         >
-                          {userData.cv.fileName}
-                        </Typography>
-                        <Stack direction="row" spacing={1}>
+                              <AssessmentIcon />
+                            </IconButton>
+                          </motion.div>
+                        </Tooltip>
                           <Tooltip title="Télécharger le CV">
                             <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                               <IconButton 
@@ -1087,7 +1164,22 @@ const ProfilePage = () => {
                               </IconButton>
                             </motion.div>
                           </Tooltip>
-                        </Stack>
+                        {!userData.cv.data && (
+                          <Tooltip title="Télécharger à nouveau le CV">
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                              <IconButton 
+                                onClick={() => cvFileInputRef.current?.click()}
+                                sx={{ 
+                                  color: '#ff9800',
+                                  bgcolor: alpha('#ff9800', 0.1),
+                                  '&:hover': { bgcolor: alpha('#ff9800', 0.2) }
+                                }}
+                              >
+                                <AddIcon />
+                              </IconButton>
+                            </motion.div>
+                          </Tooltip>
+                        )}
                       </Stack>
                     ) : (
                       <Stack spacing={2}>
@@ -1670,6 +1762,229 @@ const ProfilePage = () => {
             disabled={!newCertification.name || !newCertification.authority || !newCertification.date}
           >
             Enregistrer
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal d'analyse du CV */}
+      <Dialog
+        open={openCvAnalysis}
+        onClose={handleCloseCvAnalysis}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
+            backdropFilter: 'blur(12px)',
+            borderRadius: 4,
+            boxShadow: '0 8px 40px rgba(0,0,0,0.1)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          color: darkMode ? '#fff' : '#1a1a1a',
+          borderBottom: '1px solid',
+          borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
+          pb: 2
+        }}>
+          Analyse de votre CV
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          {cvAnalysis ? (
+            <Stack spacing={4}>
+              {/* Score Global */}
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a' }}>
+                  Score Global
+                </Typography>
+                <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                  <CircularProgress
+                    variant="determinate"
+                    value={cvAnalysis.scoreGlobal * 10}
+                    size={120}
+                    thickness={4}
+                    sx={{
+                      color: cvAnalysis.scoreGlobal >= 7 ? '#4caf50' : 
+                             cvAnalysis.scoreGlobal >= 5 ? '#1976d2' : '#f44336'
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      top: 0,
+                      left: 0,
+                      bottom: 0,
+                      right: 0,
+                      position: 'absolute',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography variant="h4" component="div" sx={{ color: darkMode ? '#fff' : '#1a1a1a' }}>
+                      {cvAnalysis.scoreGlobal}/10
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+
+              <Divider sx={{ borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08) }} />
+
+              {/* Points Forts */}
+              <Box>
+                <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a', display: 'flex', alignItems: 'center' }}>
+                  <CheckCircleOutlineIcon sx={{ color: '#4caf50', mr: 1 }} />
+                  Points Forts
+                </Typography>
+                <List>
+                  {cvAnalysis.pointsForts?.map((point, index) => (
+                    <ListItem key={index} sx={{ py: 0.5 }}>
+                      <ListItemText 
+                        primary={point}
+                        sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+
+              {/* Points à Améliorer */}
+              <Box>
+                <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a', display: 'flex', alignItems: 'center' }}>
+                  <WarningAmberIcon sx={{ color: '#ff9800', mr: 1 }} />
+                  Points à Améliorer
+                </Typography>
+                <List>
+                  {cvAnalysis.pointsFaibles?.map((point, index) => (
+                    <ListItem key={index} sx={{ py: 0.5 }}>
+                      <ListItemText 
+                        primary={point}
+                        sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+
+              {/* Recommandations */}
+              <Box>
+                <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a', display: 'flex', alignItems: 'center' }}>
+                  <LightbulbOutlineIcon sx={{ color: '#1976d2', mr: 1 }} />
+                  Recommandations
+                </Typography>
+                <List>
+                  {cvAnalysis.recommandations?.map((reco, index) => (
+                    <ListItem key={index} sx={{ py: 0.5 }}>
+                      <ListItemText 
+                        primary={reco}
+                        sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+
+              {/* Mots-clés */}
+              <Box>
+                <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a', display: 'flex', alignItems: 'center' }}>
+                  <LocalOfferOutlinedIcon sx={{ mr: 1 }} />
+                  Mots-clés Suggérés
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {cvAnalysis.motsClesSuggérés?.map((motCle, index) => (
+                    <Chip
+                      key={index}
+                      label={motCle}
+                      sx={{
+                        bgcolor: darkMode ? alpha('#1976d2', 0.2) : alpha('#1976d2', 0.1),
+                        color: darkMode ? '#90caf9' : '#1976d2',
+                        '&:hover': {
+                          bgcolor: darkMode ? alpha('#1976d2', 0.3) : alpha('#1976d2', 0.2)
+                        }
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
+              {/* Offres Correspondantes */}
+              {cvAnalysis.offresCorrespondantes && cvAnalysis.offresCorrespondantes.length > 0 && (
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a', display: 'flex', alignItems: 'center' }}>
+                    <WorkIcon sx={{ mr: 1 }} />
+                    Offres Correspondantes
+                  </Typography>
+                  <Stack spacing={2}>
+                    {cvAnalysis.offresCorrespondantes.map((job, index) => (
+                      <Paper
+                        key={index}
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          bgcolor: darkMode ? alpha('#fff', 0.05) : alpha('#000', 0.02),
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            bgcolor: darkMode ? alpha('#fff', 0.08) : alpha('#000', 0.04),
+                            transform: 'translateY(-2px)'
+                          }
+                        }}
+                      >
+                        <Stack spacing={1}>
+                          <Typography variant="h6" sx={{ color: darkMode ? '#fff' : '#1a1a1a' }}>
+                            {job.title}
+                          </Typography>
+                          <Typography variant="subtitle1" sx={{ color: darkMode ? '#90caf9' : '#1976d2' }}>
+                            {job.company}
+                          </Typography>
+                          <Stack direction="row" spacing={2}>
+                            <Typography variant="body2" sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}>
+                              <LocationOnIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
+                              {job.location}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}>
+                              <WorkIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
+                              {job.experienceLevel}
+                            </Typography>
+                          </Stack>
+                          <Typography variant="body2" sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a', mt: 1 }}>
+                            {job.description}
+                          </Typography>
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="subtitle2" sx={{ color: darkMode ? '#90caf9' : '#1976d2', mb: 0.5 }}>
+                              Compétences requises:
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                              {job.requiredSkills?.map((skill, idx) => (
+                                <Chip
+                                  key={idx}
+                                  label={skill}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: darkMode ? alpha('#1976d2', 0.2) : alpha('#1976d2', 0.1),
+                                    color: darkMode ? '#90caf9' : '#1976d2'
+                                  }}
+                                />
+                              ))}
+                            </Box>
+                          </Box>
+                        </Stack>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+            </Stack>
+          ) : (
+            <Typography>Analyse en cours...</Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ 
+          borderTop: '1px solid',
+          borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
+          p: 2
+        }}>
+          <Button onClick={handleCloseCvAnalysis} variant="outlined">
+            Fermer
           </Button>
         </DialogActions>
       </Dialog>

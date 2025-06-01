@@ -2,8 +2,8 @@ const User = require("../model/authModel");
 const jwt = require("jsonwebtoken");
 
 const maxAge = 3 * 24 * 60 * 60;
-const createToken = (id) => {
-  return jwt.sign({ id }, "kishan sheth super secret key", {
+const createToken = (id, role) => {
+  return jwt.sign({ id, role }, "kishan sheth super secret key", {
     expiresIn: maxAge,
   });
 };
@@ -52,26 +52,18 @@ module.exports.register = async (req, res, next) => {
     const { 
       email, 
       password, 
-      firstName, 
-      lastName, 
-      governorate, 
-      experienceLevel, 
-      employmentTypes, 
-      desiredJobTitle, 
-      selectedDomains, 
-      country, 
-      city, 
-      zipCode, 
-      address, 
-      mobileNumber, 
-      otherPhone,
-      yearsOfExperience,
-      diplomaSpecialty,
-      university,
-      studyStartDate,
-      studyEndDate,
-      isCurrentlyStudying
+      fullName,
+      companyName, 
+      phone,
+      location,
+      website,
+      description,
+      agreement
     } = req.body;
+
+    // Split fullName into firstName and lastName
+    const [firstName, ...lastNameParts] = fullName.split(' ');
+    const lastName = lastNameParts.join(' ');
 
     // Préparer l'objet utilisateur
     const userData = {
@@ -79,23 +71,13 @@ module.exports.register = async (req, res, next) => {
       password,
       firstName,
       lastName,
-      governorate,
-      experienceLevel,
-      employmentTypes,
-      desiredJobTitle,
-      selectedDomains,
-      country,
-      city,
-      zipCode,
-      address,
-      mobileNumber,
-      otherPhone,
-      yearsOfExperience,
-      diplomaSpecialty,
-      university,
-      studyStartDate,
-      studyEndDate,
-      isCurrentlyStudying
+      role: 'employer',
+      companyName,
+      website,
+      mobileNumber: phone,
+      city: location,
+      description,
+      agreement
     };
 
     // Si un CV a été uploadé, l'ajouter aux données utilisateur
@@ -130,20 +112,22 @@ module.exports.register = async (req, res, next) => {
       } : 'No CV'
     });
 
-    const token = createToken(user._id);
+    const token = createToken(user._id, user.role);
 
     res.cookie("jwt", token, {
       withCredentials: true,
       httpOnly: false,
       maxAge: maxAge * 1000,
       sameSite: 'lax',
-      secure: false
+      secure: false,
+      domain: 'localhost'
     });
 
     res.status(201).json({ 
       user: user._id, 
       status: true,
-      token: token
+      token: token,
+      role: user.role
     });
   } catch (err) {
     console.error('Registration error:', err);
@@ -158,18 +142,20 @@ module.exports.login = async (req, res) => {
   
   // Vérification des identifiants admin
   if (email === "admin@gmail.com" && password === "admin") {
-    const token = createToken("admin");
+    const token = createToken("admin", "admin");
     res.cookie("jwt", token, { 
-      httpOnly: false, 
-      maxAge: maxAge * 1000,
+      httpOnly: true,
+      secure: false,
       sameSite: 'lax',
-      secure: false // Mettre à true en production avec HTTPS
+      maxAge: maxAge * 1000,
+      path: '/',
+      domain: 'localhost'
     });
     res.status(200).json({ 
-      user: email, 
+      user: { email: email, role: "admin" },
       isAdmin: true,
       status: true,
-      token: token // Renvoyer le token dans la réponse
+      token: token
     });
     return;
   }
@@ -177,25 +163,51 @@ module.exports.login = async (req, res) => {
   // Pour tous les autres utilisateurs
   try {
     const user = await User.login(email, password);
-    const token = createToken(user._id);
     
-    // Définir le cookie avec les mêmes options pour tous les utilisateurs
+    // Si User.login réussit, créez le token et définissez le cookie
+    const token = createToken(user._id, user.role);
+    
     res.cookie("jwt", token, { 
-      httpOnly: false, 
-      maxAge: maxAge * 1000,
+      httpOnly: true,
+      secure: false,
       sameSite: 'lax',
-      secure: false // Mettre à true en production avec HTTPS
+      maxAge: maxAge * 1000,
+      path: '/',
+      domain: 'localhost'
     });
 
+    // Préparer les données utilisateur à renvoyer
+    const userData = {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName
+    };
+
+    // Ajouter les données spécifiques selon le rôle
+    if (user.role === 'employer') {
+      userData.companyName = user.companyName;
+      userData.website = user.website;
+      userData.mobileNumber = user.mobileNumber;
+      userData.city = user.city;
+      userData.description = user.description;
+    }
+
     res.status(200).json({ 
-      user: user._id, 
+      user: userData,
       isAdmin: false,
       status: true,
-      token: token // Renvoyer le token dans la réponse
+      token: token
     });
+
   } catch (err) {
+    // Si User.login lance une exception (par exemple, mauvais mot de passe)
+    console.error('Login failed:', err.message);
     const errors = handleErrors(err);
-    res.json({ errors, status: false });
+    
+    // Renvoie une réponse d'erreur d'authentification
+    res.status(401).json({ errors, status: false, message: errors.email || errors.password || 'Identifiants invalides' });
   }
 };
 
@@ -219,9 +231,26 @@ module.exports.checkUser = async (req, res) => {
         // Pour les autres utilisateurs
         const user = await User.findById(decodedToken.id);
         if (user) {
+          const userData = {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+            firstName: user.firstName,
+            lastName: user.lastName
+          };
+
+          // Ajouter les données spécifiques selon le rôle
+          if (user.role === 'employer') {
+            userData.companyName = user.companyName;
+            userData.website = user.website;
+            userData.mobileNumber = user.mobileNumber;
+            userData.city = user.city;
+            userData.description = user.description;
+          }
+
           res.json({ 
             status: true, 
-            user: user.email,
+            user: userData,
             isAdmin: false 
           });
         } else {
@@ -281,9 +310,28 @@ module.exports.getUserCV = async (req, res) => {
 module.exports.getUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
+    
+    // Gérer le cas admin
+    if (userId === "admin") {
+      // Renvoyer des informations basiques pour l'admin
+      const adminProfile = {
+        _id: "admin",
+        firstName: "Admin",
+        lastName: "User",
+        email: "admin@gmail.com",
+        role: "admin",
+        isAdmin: true,
+        // Ajoutez d'autres champs pertinents pour l'admin si nécessaire
+      };
+      console.log("Fetching profile for admin.", adminProfile);
+      return res.status(200).json(adminProfile);
+    }
+
+    // Pour les utilisateurs normaux, rechercher dans la base de données
     const user = await User.findById(userId);
     
     if (!user) {
+      console.error("Utilisateur non trouvé pour l'ID dans getUserProfile:", userId);
       return res.status(404).json({ message: "Profil utilisateur non trouvé." });
     }
 
@@ -299,6 +347,7 @@ module.exports.getUserProfile = async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      role: user.role,
       governorate: user.governorate,
       mobileNumber: user.mobileNumber,
       otherPhone: user.otherPhone,
@@ -320,11 +369,17 @@ module.exports.getUserProfile = async (req, res) => {
       certifications: user.certifications || [],
       profilePicture: profilePictureBase64
     };
-
+    console.log("Fetching profile for regular user.", userProfile);
     res.status(200).json(userProfile);
+
   } catch (error) {
     console.error("Erreur lors de la récupération du profil:", error);
-    res.status(500).json({ message: "Erreur interne du serveur." });
+    // Gérer spécifiquement la CastError pour les IDs non ObjectId
+    if (error.name === 'CastError') {
+        console.error("CastError détectée, probablement un ID non valide.", error.message);
+        return res.status(400).json({ message: 'ID utilisateur invalide.' });
+    }
+    res.status(500).json({ message: "Erreur interne du serveur lors de la récupération du profil." });
   }
 };
 

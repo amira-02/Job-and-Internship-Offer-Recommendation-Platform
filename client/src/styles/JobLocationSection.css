@@ -1,0 +1,60 @@
+.job-location-section {
+  padding: 60px 20px; /* Consistent padding with other sections */
+  text-align: center;
+  /* background-color: #f8f8f8; */ /* Removed light background to allow body background to show */
+}
+
+.job-location-container {
+  max-width: 900px; /* Max width for the content */
+  margin: 0 auto;
+  padding: 40px; /* Increased inner padding */
+  background-color: #fff; /* White background for the container */
+  border-radius: 10px; /* Rounded corners */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* More prominent shadow */
+}
+
+.job-location-section .section-title {
+  margin-bottom: 30px; /* Space below the title */
+  color: #1a1a1a; /* Dark color for the title */
+  font-size: 2.2rem; /* Adjusted title font size */
+  font-weight: 600;
+}
+
+.chart-container {
+  width: 100%; /* Make container responsive */
+  max-width: 500px; /* Max width for the chart itself */
+  margin: 40px auto; /* Center the chart container */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .job-location-section {
+    padding: 40px 15px;
+  }
+
+  .job-location-section .section-title {
+    font-size: 1.8rem;
+  }
+
+  .job-location-container {
+      padding: 30px; /* Reduced padding for container */
+  }
+}
+
+@media (max-width: 480px) {
+  .job-location-section {
+    padding: 30px 10px;
+  }
+
+  .job-location-section .section-title {
+    font-size: 1.5rem;
+  }
+
+  .job-location-container {
+      padding: 20px; /* Further reduced padding for container */
+  }
+
+  .chart-container {
+      margin: 30px auto; /* Adjusted margin on small screens */
+  }
+} 

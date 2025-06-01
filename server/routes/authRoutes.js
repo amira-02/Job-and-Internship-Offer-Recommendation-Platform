@@ -5,6 +5,7 @@ const upload = require('../middleware/uploadMiddleware');
 const { requireAuth } = require('../middleware/authMiddleware');
 const User = require('../model/authModel');
 const multer = require('multer');
+const jwt = require('jsonwebtoken');
 
 // Modifier le middleware upload pour accepter les fichiers PDF et Word
 const cvUpload = multer({
@@ -148,6 +149,40 @@ router.delete('/profile/cv', requireAuth, async (req, res) => {
       message: "Erreur lors de la suppression du CV",
       error: error.message 
     });
+  }
+});
+
+// Route de déconnexion
+router.post('/logout', (req, res) => {
+  try {
+    const expiredCookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Doit correspondre à la façon dont le cookie est set
+      sameSite: 'lax',
+      path: '/', // Doit correspondre à la façon dont le cookie est set
+      // Ne pas spécifier de domaine si non spécifié lors du set
+      expires: new Date(0) // Définir une date d'expiration passée
+    };
+
+    console.log('Attempting to expire jwt cookie with options:', expiredCookieOptions);
+    // Expirer le cookie JWT
+    res.cookie('jwt', '', expiredCookieOptions);
+    console.log('Attempted to expire jwt cookie.');
+
+    console.log('Attempting to expire JSESSIONID cookie with options:', expiredCookieOptions);
+    // Expirer le cookie de session
+    res.cookie('JSESSIONID', '', expiredCookieOptions);
+    console.log('Attempted to expire JSESSIONID cookie.');
+
+    // Envoyer une réponse avec des en-têtes pour forcer la suppression des cookies et du stockage côté client
+    res.setHeader('Clear-Site-Data', '"cookies", "storage"');
+    
+    res.status(200).json({ message: 'Déconnexion réussie' });
+    console.log('Logout response sent.');
+
+  } catch (error) {
+    console.error('Erreur lors de la déconnexion côté serveur:', error);
+    res.status(500).json({ message: 'Erreur lors de la déconnexion côté serveur' });
   }
 });
 

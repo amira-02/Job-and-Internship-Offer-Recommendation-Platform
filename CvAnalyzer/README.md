@@ -19,14 +19,14 @@ Une plateforme d'analyse de CV utilisant l'IA pour évaluer et recommander des o
 
 1. Clonez le dépôt :
 ```bash
-git clone [URL_DU_REPO]
+git clone https://github.com/amira-02/Job-and-Internship-Offer-Recommendation-Platform.git
 cd Job-and-Internship-Offer-Recommendation-Platform
 ```
 
 2. Créez un environnement virtuel et installez les dépendances :
 ```bash
 python -m venv venv
-source venv/bin/activate  # Sur Windows : venv\Scripts\activate
+source venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
