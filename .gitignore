@@ -21,10 +21,25 @@ wheels/
 .installed.cfg
 *.egg
 
+<<<<<<< HEAD
 # Virtual Environment
 venv/
 ENV/
 .env
+=======
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+>>>>>>> master
 
 # IDE
 .idea/
@@ -34,6 +49,7 @@ ENV/
 
 # Logs
 *.log
+<<<<<<< HEAD
 
 # Local development
 .env.local
@@ -44,3 +60,15 @@ ENV/
 # System Files
 .DS_Store
 Thumbs.db 
+=======
+logs/
+scraper.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Ignore large GIF files
+*.gif
+client/src/assets/images/home video.gif
+>>>>>>> master
