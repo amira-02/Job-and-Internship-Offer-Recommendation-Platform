@@ -21,19 +21,6 @@ wheels/
 .installed.cfg
 *.egg
 
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
 # IDE
 .idea/
 .vscode/
@@ -42,13 +29,8 @@ yarn-error.log*
 
 # Logs
 *.log
-logs/
 scraper.log
 
 # OS
 .DS_Store
-Thumbs.db
-
-# Ignore large GIF files
-*.gif
-client/src/assets/images/home video.gif
+Thumbs.db 
