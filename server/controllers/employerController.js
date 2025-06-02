@@ -179,7 +179,56 @@ const loginEmployer = async (req, res) => {
   }
 };
 
+// Mise à jour du profil employeur
+const updateEmployerProfile = async (req, res) => {
+  try {
+    const { companyName, fullName, phone, location, website, description } = req.body;
+    const userId = req.user.id; // Récupéré du middleware d'authentification
+
+    // Vérifier si l'utilisateur existe
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    // Vérifier si l'utilisateur est un employeur
+    if (user.role !== 'employer') {
+      return res.status(403).json({ message: 'Accès non autorisé' });
+    }
+
+    // Mettre à jour les champs
+    const updateFields = {};
+    if (companyName) updateFields.companyName = companyName;
+    if (fullName) {
+      const [firstName, ...lastNameParts] = fullName.split(' ');
+      const lastName = lastNameParts.join(' ');
+      updateFields.firstName = firstName;
+      updateFields.lastName = lastName;
+    }
+    if (phone) updateFields.mobileNumber = phone;
+    if (location) updateFields.city = location;
+    if (website) updateFields.website = website;
+    if (description) updateFields.description = description;
+
+    // Mettre à jour l'utilisateur
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateFields },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    res.json({
+      message: 'Profil mis à jour avec succès',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du profil:', error);
+    res.status(500).json({ message: 'Erreur lors de la mise à jour du profil' });
+  }
+};
+
 module.exports = {
   registerEmployer,
-  loginEmployer
+  loginEmployer,
+  updateEmployerProfile
 }; 

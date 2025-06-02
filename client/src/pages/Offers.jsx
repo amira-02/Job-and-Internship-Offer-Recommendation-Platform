@@ -24,7 +24,7 @@ const experienceTypes = [
   'Expert',
 ];
 
-const truncate = (str, n) => (str.length > n ? str.slice(0, n) + '...' : str);
+const truncate = (str, n) => (str && str.length > n ? str.slice(0, n) + '...' : str);
 
 const Offers = () => {
   const [offers, setOffers] = useState([]);
@@ -33,7 +33,8 @@ const Offers = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const offersPerPage = 6;
+  const offersPerPage = 12;
+  const [searchTerm, setSearchTerm] = useState('');
   // Filtres
   const [filters, setFilters] = useState({
     location: '',
@@ -100,24 +101,32 @@ const Offers = () => {
     setCurrentPage(1);
   };
 
+  // Fonction pour charger les offres (modifiée pour inclure la recherche)
+  const fetchOffers = async (query = '') => {
+    setLoading(true);
+    try {
+      const url = query
+        ? `http://localhost:3000/api/joboffers/search?query=${query}`
+        : 'http://localhost:3000/api/joboffers/';
+      const res = await axios.get(url);
+      console.log("API response data:", res.data); // Log des données reçues
+      setOffers(res.data);
+    } catch (err) {
+      console.error('Erreur lors du chargement des offres:', err); // Log détaillé de l'erreur
+      setError('Erreur lors du chargement des offres.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Charger les offres au montage et lors du changement du terme de recherche
   useEffect(() => {
-    const fetchOffers = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get('http://localhost:3000/api/joboffers/');
-        setOffers(res.data);
-      } catch (err) {
-        setError('Erreur lors du chargement des offres.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOffers();
-  }, []);
+    fetchOffers(searchTerm);
+  }, [searchTerm]); // Déclencher la recherche lorsque searchTerm change
 
   // Filtrage dynamique
   const filterOffers = (offers) => {
-    return offers.filter((offer) => {
+    const filtered = offers.filter((offer) => {
       // Location
       if (filters.location && !offer.location.toLowerCase().includes(filters.location.toLowerCase())) {
         return false;
@@ -154,6 +163,8 @@ const Offers = () => {
       }
       return true;
     });
+    console.log("Offers after filtering:", filtered.length, filtered); // Log après filtrage
+    return filtered;
   };
 
   // Tri dynamique
@@ -172,6 +183,7 @@ const Offers = () => {
         return bSalary - aSalary;
       });
     }
+    console.log("Offers after sorting:", offers.length, offers); // Log après tri
     return offers;
   };
 
@@ -181,6 +193,7 @@ const Offers = () => {
   const indexOfLastOffer = currentPage * offersPerPage;
   const indexOfFirstOffer = indexOfLastOffer - offersPerPage;
   const currentOffers = filteredOffers.slice(indexOfFirstOffer, indexOfLastOffer);
+  console.log("Offers for current page:", currentOffers.length, currentOffers); // Log des offres affichées
   const totalPages = Math.ceil(filteredOffers.length / offersPerPage);
 
   // Handlers pour les filtres
@@ -241,6 +254,12 @@ const Offers = () => {
   const countByType = (type) => offers.filter((o) => (o.contractType || 'Fulltime') === type).length;
   const countByExperience = (exp) => offers.filter((o) => o.experience === exp).length;
 
+  // Gestionnaire pour le changement du champ de recherche
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Réinitialiser la pagination lors de la recherche
+  };
+
   return (
     <div
       style={{
@@ -274,6 +293,19 @@ const Offers = () => {
           gap: 2,
           
         }}>
+          {/* Champ de recherche ajouté ici */}
+          <Box mb={2}>
+            <Typography fontWeight={600} fontSize={16} mb={1}>Search Job</Typography>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="Job Title, Keywords..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              sx={{ bgcolor: '#fff', borderRadius: 2 }}
+            />
+          </Box>
+          <Divider />
           {/* Location */}
           <Box mb={2}>
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
@@ -513,7 +545,41 @@ const Offers = () => {
             <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
               {currentOffers.map((offer) => {
+                // Temporairement, affichons l'objet offre en brut pour le débogage
+                /* Code de débogage (commenté)
+                return (
+                  <div key={offer._id} style={{ background: '#fff', padding: 16, margin: 8, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                    <pre>{JSON.stringify(offer, null, 2)}</pre>
+                  </div>
+                );
+                */
+                // Code de la carte d'offre original (décommenté et mis à jour)
                 const isActive = activeCardId === offer._id;
+
+                // Adapter l'accès aux propriétés pour gérer les deux structures (ancienne et nouvelle)
+                const title = offer.jobTitle || offer.title;
+                const company = offer.employer || offer.company;
+                const type = offer.jobType || offer.contractType || 'Fulltime';
+                const description = offer.jobDescription || offer.description;
+
+                // Adapter l'affichage de la localisation
+                const locationDisplay = (offer.address && offer.country)
+                  ? `${offer.address}, ${offer.country}`
+                  : offer.address
+                    ? offer.address
+                    : offer.country
+                      ? offer.country
+                      : offer.location || ''; // Fallback to old location if new not present
+
+                // Adapter l'affichage du salaire
+                const salaryDisplay = (offer.minSalary && offer.maxSalary)
+                  ? `${offer.minSalary} - ${offer.maxSalary} ${offer.salaryPeriod || ''}`.trim()
+                  : offer.minSalary
+                    ? `${offer.minSalary} ${offer.salaryPeriod || ''}`.trim()
+                    : offer.maxSalary
+                      ? `${offer.maxSalary} ${offer.salaryPeriod || ''}`.trim()
+                      : offer.salary || ''; // Fallback to old salary if new not present
+
                 return (
                   <div
                     key={offer._id}
@@ -537,20 +603,21 @@ const Offers = () => {
                     onTouchStart={() => setActiveCardId(offer._id)}
                     onTouchEnd={() => setActiveCardId(null)}
                   >
-                    <h3 style={{ fontWeight: 700, fontSize: 20, margin: '32px 0 8px 0' }}>{offer.title}</h3>
-                    <div style={{ color: '#1a1a1a', fontWeight: 600, marginBottom: 8 }}>{offer.company}</div>
-                    <span style={{ position: 'absolute', top: 16, left: 16, background: '#e6f4ea', color: '#1a1a1a', borderRadius: 8, padding: '2px 10px', fontSize: 12, fontWeight: 600 }}>{offer.contractType || 'Fulltime'}</span>
+                    {/* Utiliser les variables adaptées */}
+                    <h3 style={{ fontWeight: 700, fontSize: 20, margin: '32px 0 8px 0' }}>{title}</h3>
+                    <div style={{ color: '#1a1a1a', fontWeight: 600, marginBottom: 8 }}>{company}</div>
+                    <span style={{ position: 'absolute', top: 16, left: 16, background: '#e6f4ea', color: '#1a1a1a', borderRadius: 8, padding: '2px 10px', fontSize: 12, fontWeight: 600 }}>{type}</span>
 
-                    <div style={{ color: '#888', fontSize: 15, marginBottom: 8 }}>{offer.location}</div>
+                    <div style={{ color: '#888', fontSize: 15, marginBottom: 8 }}>{locationDisplay}</div>
                     <div style={{ color: '#222', fontSize: 15, marginBottom: 8 }}>
-                      {truncate(offer.description, 90)}
-                      {offer.description.length > 90 && (
-                        <button onClick={() => handleShowMore(offer.description)} style={{ color: '#1a1a1a', background: 'none', border: 'none', marginLeft: 8, cursor: 'pointer', fontWeight: 600 }}>
+                      {truncate(description || '', 90)}
+                      {description && description.length > 90 && (
+                        <button onClick={() => handleShowMore(description)} style={{ color: '#1a1a1a', background: 'none', border: 'none', marginLeft: 8, cursor: 'pointer', fontWeight: 600 }}>
                           Voir plus
                         </button>
                       )}
                     </div>
-                    <div style={{ color: '#1a1a1a', fontWeight: 600, marginBottom: 8 }}>{offer.salary ? offer.salary : ''}</div>
+                    <div style={{ color: '#1a1a1a', fontWeight: 600, marginBottom: 8 }}>{salaryDisplay}</div>
                     <button style={{ marginTop: 'auto', alignSelf: 'flex-end', background: '#e8f1fa', color: '#1976d2', border: 'none', borderRadius: 10, padding: '8px 24px', fontWeight: 600, cursor: 'pointer' }}>APPLY</button>
                   </div>
                 );

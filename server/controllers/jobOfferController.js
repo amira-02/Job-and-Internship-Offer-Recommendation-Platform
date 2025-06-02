@@ -1,4 +1,4 @@
-const JobOffer = require('../model/JobOffer');
+const JobOffer = require('../model/JobOfferModel');
 
 // Récupérer toutes les offres d'emploi
 exports.getAllJobOffers = async (req, res) => {
@@ -16,6 +16,7 @@ exports.getAllJobOffers = async (req, res) => {
     });
   }
 };
+
 
 // Récupérer une offre d'emploi par son ID
 exports.getJobOfferById = async (req, res) => {
@@ -40,22 +41,39 @@ exports.getJobOfferById = async (req, res) => {
 exports.searchJobOffers = async (req, res) => {
   try {
     const { query, location, contractType } = req.query;
+    console.log('Recherche backend - Terme reçu:', query); // Log le terme de recherche reçu
     let searchQuery = {};
 
+    // Utiliser la recherche textuelle MongoDB si un terme de recherche est présent
     if (query) {
-      searchQuery.$text = { $search: query };
+       searchQuery.$text = { $search: query };
+       // Ancienne recherche $regex (commentée)
+       /*
+       searchQuery.jobTitle = { $regex: query, $options: 'i' };
+       // Ancienne recherche $or sur plusieurs champs (commentée)
+       /*
+       searchQuery.$or = [
+           { jobTitle: { $regex: query, $options: 'i' } },
+           { jobDescription: { $regex: query, $options: 'i' } },
+           { jobCategory: { $regex: query, $options: 'i' } },
+           { skills: { $regex: query, $options: 'i' } }
+       ];
+       */
     }
 
+    // Ajout des autres filtres si présents
     if (location) {
-      searchQuery.location = new RegExp(location, 'i');
+      searchQuery.address = new RegExp(location, 'i'); // Assumer que la recherche de localisation est sur l'adresse
     }
 
-    if (contractType) {
-      searchQuery.contractType = new RegExp(contractType, 'i');
-    }
+    // Les filtres par type et expérience sont déjà gérés côté client dans Offers.jsx,
+    // nous ne les incluons donc pas ici pour l'instant si la recherche principale est textuelle.
 
+    console.log('Recherche backend - Objet de requête Mongoose:', searchQuery); // Log l'objet de requête construit
+
+    // Pour la recherche textuelle, on peut aussi trier par pertinence si nécessaire, mais gardons le tri par date pour l'instant.
     const jobOffers = await JobOffer.find(searchQuery)
-      .sort({ postedDate: -1 })
+      .sort({ createdAt: -1 }) // Peut être remplacé par { score: { $meta: "textScore" } } pour trier par pertinence
       .select('-__v');
 
     res.status(200).json(jobOffers);
@@ -64,6 +82,129 @@ exports.searchJobOffers = async (req, res) => {
     res.status(500).json({ 
       message: 'Erreur lors de la recherche des offres',
       error: error.message 
+    });
+  }
+};
+
+// Créer une nouvelle offre d'emploi
+exports.createJobOffer = async (req, res) => {
+  try {
+    const {
+      jobTitle,
+      jobDescription,
+      jobCategory,
+      jobType,
+      salaryPeriod,
+      minSalary,
+      maxSalary,
+      skills,
+      experienceLevel,
+      address,
+      country
+    } = req.body;
+
+    // Créer la nouvelle offre avec l'ID de l'employeur
+    const jobOffer = new JobOffer({
+      employer: req.user.id,
+      jobTitle,
+      jobDescription,
+      jobCategory,
+      jobType,
+      salaryPeriod,
+      minSalary,
+      maxSalary,
+      skills,
+      experienceLevel,
+      address,
+      country
+    });
+
+    await jobOffer.save();
+
+    res.status(201).json({
+      message: 'Offre d\'emploi créée avec succès',
+      jobOffer
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de l\'offre:', error);
+    res.status(500).json({
+      message: 'Erreur lors de la création de l\'offre',
+      error: error.message
+    });
+  }
+};
+
+// Obtenir toutes les offres d'un employeur
+exports.getEmployerJobOffers = async (req, res) => {
+  try {
+    const jobOffers = await JobOffer.find({ employer: req.user.id })
+      .sort({ createdAt: -1 });
+
+    res.json(jobOffers);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des offres:', error);
+    res.status(500).json({
+      message: 'Erreur lors de la récupération des offres',
+      error: error.message
+    });
+  }
+};
+
+// Mettre à jour une offre d'emploi
+exports.updateJobOffer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const jobOffer = await JobOffer.findOneAndUpdate(
+      { _id: id, employer: req.user.id },
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!jobOffer) {
+      return res.status(404).json({
+        message: 'Offre non trouvée ou vous n\'êtes pas autorisé à la modifier'
+      });
+    }
+
+    res.json({
+      message: 'Offre mise à jour avec succès',
+      jobOffer
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'offre:', error);
+    res.status(500).json({
+      message: 'Erreur lors de la mise à jour de l\'offre',
+      error: error.message
+    });
+  }
+};
+
+// Supprimer une offre d'emploi
+exports.deleteJobOffer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const jobOffer = await JobOffer.findOneAndDelete({
+      _id: id,
+      employer: req.user.id
+    });
+
+    if (!jobOffer) {
+      return res.status(404).json({
+        message: 'Offre non trouvée ou vous n\'êtes pas autorisé à la supprimer'
+      });
+    }
+
+    res.json({
+      message: 'Offre supprimée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de l\'offre:', error);
+    res.status(500).json({
+      message: 'Erreur lors de la suppression de l\'offre',
+      error: error.message
     });
   }
 }; 
