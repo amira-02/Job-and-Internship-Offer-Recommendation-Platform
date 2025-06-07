@@ -93,22 +93,10 @@ const Register = () => {
     setVerificationLoading(true);
 
     try {
-      console.log('Envoi de la requête de vérification avec:', {
-        token: verificationCode,
-        email: formData.email
-      });
-
       const response = await axios.post('http://localhost:3000/api/auth/verify-email', {
         token: verificationCode,
         email: formData.email
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true
       });
-
-      console.log('Réponse reçue:', response.data);
 
       if (response.data.success) {
         toast.success('Email vérifié avec succès ! Redirection vers la connexion...');
@@ -119,9 +107,7 @@ const Register = () => {
         toast.error(response.data.message || 'Code de vérification invalide.');
       }
     } catch (err) {
-      console.error('Erreur de vérification complète:', err);
-      console.error('Détails de la requête:', err.config);
-      console.error('Réponse du serveur:', err.response?.data);
+      console.error('Verification error:', err);
       toast.error(err.response?.data?.message || 'Erreur lors de la vérification.');
     } finally {
       setVerificationLoading(false);

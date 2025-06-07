@@ -22,36 +22,48 @@ function Header() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchUserProfile = async () => {
-      if (cookies.jwt) {
-        try {
-          const response = await fetch("http://localhost:3000/api/auth/profile", {
-            method: "GET",
-            headers: {
-              'Authorization': `Bearer ${cookies.jwt}`,
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-          });
-          const data = await response.json();
-          
+      if (!cookies.jwt) {
+        if (isMounted) {
+          setUserProfile(null);
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch("http://localhost:3000/api/auth/profile", {
+          method: "GET",
+          headers: {
+            'Authorization': `Bearer ${cookies.jwt}`,
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+        });
+        const data = await response.json();
+        
+        if (isMounted) {
           if (data) {
             setUserProfile(data);
           } else {
             setUserProfile(null);
             removeCookie('jwt');
           }
-        } catch (err) {
-          console.error("Error fetching user profile:", err);
+        }
+      } catch (err) {
+        console.error("Error fetching user profile:", err);
+        if (isMounted) {
           setUserProfile(null);
         }
-      } else {
-        setUserProfile(null);
       }
     };
 
     fetchUserProfile();
-  }, [cookies.jwt, removeCookie]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cookies.jwt]);
 
   const handleLogout = () => {
     removeCookie('jwt');
@@ -111,15 +123,24 @@ function Header() {
             </div>
           ) : (
             <div className="auth-buttons">
-              <Link to="/login" className="nav-button login" onClick={() => setIsMenuOpen(false)}>
-                Sign In
+              <Link to="/login" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                Login
               </Link>
-              <Link to="/register" className="nav-button signup" onClick={() => setIsMenuOpen(false)}>
-                Sign Up
+              <Link to="/register" className="nav-link register" onClick={() => setIsMenuOpen(false)}>
+                Register
               </Link>
             </div>
           )}
         </nav>
+
+        <button 
+          className={`menu-toggle ${isMenuOpen ? 'active' : ''}`}
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </div>
     </header>
   );

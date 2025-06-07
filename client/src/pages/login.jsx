@@ -18,14 +18,17 @@ function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let isMounted = true;
     // Vérifier si l'utilisateur est déjà connecté
     const checkAuth = async () => {
+      if (!cookies.jwt) return; // Ne pas vérifier si pas de token
+
       try {
         const response = await axios.get("http://localhost:3000/api/auth/check", {
           withCredentials: true,
         });
         
-        if (response.data.status) {
+        if (isMounted && response.data.status) {
           // Rediriger vers la page appropriée selon le rôle
           if (response.data.user.role === 'admin') {
             navigate("/admin");
@@ -43,7 +46,11 @@ function Login() {
     };
 
     checkAuth();
-  }, [navigate]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cookies.jwt, navigate]); // Ajout de cookies.jwt comme dépendance
 
   const handleSubmit = async (e) => {
     e.preventDefault();

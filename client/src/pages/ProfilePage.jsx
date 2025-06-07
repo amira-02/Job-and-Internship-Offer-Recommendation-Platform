@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useCookies } from 'react-cookie';
 import { useNavigate } from 'react-router-dom';
@@ -73,7 +73,7 @@ const ProfilePage = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [cookies] = useCookies(['jwt']);
+  const [cookies, setCookie, removeCookie] = useCookies(['jwt']);
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -120,44 +120,80 @@ const ProfilePage = () => {
     { value: 'C2', label: 'C2 - Maîtrise' }
   ];
 
-  // Définir la fonction fetchUserData en dehors de useEffect
-  const fetchUserData = async () => {
+  // Utilisation de useCallback pour mémoïser la fonction et éviter sa recréation inutile
+  const fetchUserData = useCallback(async () => {
     if (!cookies.jwt) {
-      navigate('/login');
-      return;
+      // Si pas de JWT, pas besoin de faire l'appel API
+      return null; 
     }
 
-    setLoading(true);
-    setError(null);
-
-      try {
+    try {
       const response = await axios.get('http://localhost:3000/api/auth/profile', {
         headers: {
           Authorization: `Bearer ${cookies.jwt}`
         },
         withCredentials: true
       });
-      setUserData(response.data);
+      return response.data;
     } catch (err) {
-      console.error('Erreur lors de la récupération des données utilisateur:', err);
-      if (err.response) {
-        setError(err.response.data.message || `Erreur serveur (${err.response.status}).`);
-        if (err.response.status === 401) {
-          navigate('/login');
-        }
-      } else if (err.request) {
-        setError('Impossible de se connecter au serveur.');
-      } else {
-        setError('Erreur lors de la configuration de la requête.');
+      console.error('Erreur lors de la récupération des données utilisateur (fetchUserData):', err);
+      if (err.response && err.response.status === 401) {
+        // Le token est invalide, nous le supprimerons dans le useEffect principal
+        throw new Error('Unauthorized'); // Propager l'erreur pour que le useEffect la gère
       }
-    } finally {
-      setLoading(false);
+      throw err; // Propager d'autres erreurs
     }
-  };
+  }, [cookies.jwt]); // Dépend de cookies.jwt
 
   useEffect(() => {
-    fetchUserData();
-  }, [cookies.jwt, navigate]);
+    let isMounted = true;
+    const loadProfile = async () => {
+      setLoading(true);
+      setError(null);
+
+      if (!cookies.jwt) {
+        if (isMounted) {
+          setUserData(null);
+          if (window.location.pathname !== '/login') {
+            navigate('/login');
+          }
+        }
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await fetchUserData();
+        if (isMounted) {
+          setUserData(data);
+        }
+      } catch (err) {
+        console.error('Erreur de traitement du profil dans useEffect:', err);
+        if (isMounted) {
+          if (err.message === 'Unauthorized') {
+            removeCookie('jwt', { path: '/' });
+            // La navigation vers /login sera déclenchée par le changement de cookies.jwt
+            if (window.location.pathname !== '/login') {
+              navigate('/login');
+            }
+          } else {
+            setError(err.response?.data?.message || 'Erreur lors du chargement du profil');
+          }
+          setUserData(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cookies.jwt, navigate, removeCookie, fetchUserData]); // Ajout de fetchUserData aux dépendances
 
   useEffect(() => {
     if (userData) {
@@ -205,18 +241,18 @@ const ProfilePage = () => {
         },
         withCredentials: true
       });
-      
+
+      // Créer un lien de téléchargement
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', userData.cv.fileName);
+      link.setAttribute('download', userData.cv.fileName || 'cv.pdf');
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Erreur lors du téléchargement du CV:', err);
-      setError('Erreur lors du téléchargement du CV. Veuillez réessayer.');
+      console.error('Error downloading CV:', err);
+      setError('Erreur lors du téléchargement du CV');
     }
   };
 
@@ -733,6 +769,14 @@ const ProfilePage = () => {
           <Typography variant="h6" sx={{ mb: 1 }}>Erreur</Typography>
           <Typography>{error}</Typography>
         </Alert>
+      </Box>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <Typography>Utilisateur non trouvé</Typography>
       </Box>
     );
   }
