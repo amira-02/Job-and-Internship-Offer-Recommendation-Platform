@@ -34,10 +34,10 @@ const PostJobForm = ({ onJobPosted }) => {
 
   const handleFormSubmit = async (values) => {
     try {
-      const jobData = {
-        ...values,
+    const jobData = {
+      ...values,
         skills: skills,
-      };
+    };
 
       const response = await fetch('http://localhost:3000/api/joboffers', {
         method: 'POST',
@@ -99,8 +99,9 @@ const PostJobForm = ({ onJobPosted }) => {
 
         <Space align="start" gutter={16}>
           <Form.Item
-            label="Job Category"
+            label="Job Category*"
             name="jobCategory"
+            rules={[{ required: true, message: 'Please select a job category!' }]}
           >
             <Select placeholder="Select a category">
               {jobCategories.map(category => <Option key={category} value={category}>{category}</Option>)}
@@ -108,8 +109,9 @@ const PostJobForm = ({ onJobPosted }) => {
           </Form.Item>
 
           <Form.Item
-            label="Job Type"
+            label="Job Type*"
             name="jobType"
+            rules={[{ required: true, message: 'Please select a job type!' }]}
           >
             <Select placeholder="Select a type">
               {jobTypes.map(type => <Option key={type} value={type}>{type}</Option>)}
@@ -205,7 +207,7 @@ const PostJobForm = ({ onJobPosted }) => {
           name="country"
           rules={[{ required: true, message: 'Please select a country!' }]}
          >
-          <Select placeholder="Select country">
+          <Select placeholder="Select a country">
              {countries.map(country => <Option key={country} value={country}>{country}</Option>)}
           </Select>
          </Form.Item>

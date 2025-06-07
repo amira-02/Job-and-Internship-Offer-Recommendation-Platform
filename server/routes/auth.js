@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 
-// ... existing code ...
+
 
 // Route de déconnexion
 router.post('/logout', (req, res) => {
@@ -30,5 +30,6 @@ router.post('/logout', (req, res) => {
   res.setHeader('Clear-Site-Data', '"cookies", "storage"');
   res.status(200).json({ message: 'Déconnexion réussie' });
 });
-
+AuthRoutes.post('/register',Reigster)
+AuthRoutes.post('/verifyEmail',VerfiyEmail)
 module.exports = router; 

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, checkUser, getUserCV, getUserProfile, updateUserProfile, addCertification, uploadProfilePicture } = require('../controllers/authControllers');
+const { register, login, checkUser, getUserCV, getUserProfile, updateUserProfile, addCertification, uploadProfilePicture, verifyEmail } = require('../controllers/authControllers');
 const upload = require('../middleware/uploadMiddleware');
 const { requireAuth } = require('../middleware/authMiddleware');
 const User = require('../model/authModel');
@@ -26,6 +26,9 @@ const cvUpload = multer({
 
 // Registration route with file upload
 router.post('/register', upload.single('cv'), register);
+
+// Nouvelle route pour la vérification de l'email avec OTP
+router.post('/verify-email', verifyEmail);
 
 // Route pour récupérer le CV
 router.get('/cv/:userId', getUserCV);

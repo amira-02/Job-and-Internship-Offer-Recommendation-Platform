@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, message, Layout, Menu, Typography, Space, Avatar, Row, Col, Statistic, Progress, Badge, Drawer, Modal, Form, Input, Empty, Divider, Tag } from 'antd';
+import { Card, Button, message, Layout, Menu, Typography, Space, Avatar, Row, Col, Statistic, Progress, Badge, Drawer, Modal, Form, Input, Empty, Divider, Tag, theme, Timeline } from 'antd';
 import { 
   UserOutlined, 
   BankOutlined, 
@@ -21,10 +21,18 @@ import {
   MenuOutlined,
   CloseOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  LaptopOutlined,
+  NotificationOutlined,
+  HeartOutlined,
+  DollarCircleOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import PostJobForm from '../components/PostJobForm';
+import EmployerProfileForm from '../components/EmployerProfileForm';
+import { authService } from '../services/authService';
 import '../styles/EmployerDashboard.css';
+import { useMediaQuery } from '@mui/material';
 
 const { Content, Sider } = Layout;
 const { Title, Text } = Typography;
@@ -43,6 +51,10 @@ function EmployerDashboard() {
   const navigate = useNavigate();
   const [jobOffers, setJobOffers] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
+  const { token: antdToken } = theme.useToken();
+  const [selectedMenuItem, setSelectedMenuItem] = useState('dashboard');
+
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => {
     const handleResize = () => {
@@ -113,7 +125,7 @@ function EmployerDashboard() {
   };
 
   const handleMenuClick = (e) => {
-    setActiveMenu(e.key);
+    setSelectedMenuItem(e.key);
     if (windowWidth <= 768) {
       setMobileDrawerVisible(false);
     }
@@ -121,18 +133,10 @@ function EmployerDashboard() {
     if (e.key === '4') {
       setIsPostJobModalVisible(true);
     }
-  };
 
-  const handleEditProfile = () => {
-    form.setFieldsValue({
-      companyName: user.companyName,
-      fullName: user.fullName,
-      phone: user.phone,
-      location: user.location,
-      website: user.website,
-      description: user.description
-    });
-    setIsEditModalVisible(true);
+    if (e.key === 'edit-profile') {
+      setIsEditModalVisible(true);
+    }
   };
 
   const handleUpdateProfile = async (values) => {
@@ -249,7 +253,6 @@ function EmployerDashboard() {
         <Menu.Item key="7" icon={<SettingOutlined />}>
           Account Settings
         </Menu.Item>
-        <Menu.Divider />
         <Menu.Item key="8" icon={<LogoutOutlined />} onClick={handleLogout} danger>
           Logout
         </Menu.Item>
@@ -314,6 +317,177 @@ function EmployerDashboard() {
         ))}
       </Row>
     );
+  };
+
+  const renderContent = () => {
+    switch (selectedMenuItem) {
+      case '1':
+        return (
+          <div className="profile-container">
+            <Row gutter={[24, 24]}>
+              {/* Profile Header Card */}
+              <Col span={24}>
+                <Card className="profile-header-card">
+                  <Row align="middle" gutter={24}>
+                    <Col>
+                      <Avatar 
+                        size={80} 
+                        icon={<BankOutlined />} 
+                        className="profile-avatar"
+                        style={{ backgroundColor: '#1890ff' }}
+                      />
+                    </Col>
+                    <Col flex="auto">
+                      <Title level={3} style={{ margin: 0 }}>{user?.companyName}</Title>
+                      <Text type="secondary" style={{ fontSize: '16px' }}>{user?.email}</Text>
+                      <div style={{ marginTop: '8px' }}>
+                        <Tag color="blue" icon={<EnvironmentOutlined />}>{user?.location}</Tag>
+                        <Tag color="green" icon={<GlobalOutlined />}>{user?.website}</Tag>
+                        <Tag color="purple" icon={<PhoneOutlined />}>{user?.phone}</Tag>
+                      </div>
+                    </Col>
+                    <Col>
+                      <Button 
+                        type="primary" 
+                        icon={<EditOutlined />}
+                        onClick={() => setIsEditModalVisible(true)}
+                      >
+                        Modifier le profil
+                      </Button>
+                    </Col>
+                  </Row>
+                </Card>
+              </Col>
+
+              {/* Statistics Cards */}
+              <Col xs={24} sm={8}>
+                <Card className="stat-card">
+                  <Statistic
+                    title="Offres publiées"
+                    value={jobOffers.length}
+                    prefix={<FileTextOutlined />}
+                    valueStyle={{ color: '#1890ff' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Card className="stat-card">
+                  <Statistic
+                    title="Vues du profil"
+                    value={850}
+                    prefix={<EyeOutlined />}
+                    valueStyle={{ color: '#52c41a' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Card className="stat-card">
+                  <Statistic
+                    title="Candidatures reçues"
+                    value={1128}
+                    prefix={<TeamOutlined />}
+                    valueStyle={{ color: '#722ed1' }}
+                  />
+                </Card>
+              </Col>
+
+              {/* Company Description Card */}
+              <Col span={24}>
+                <Card 
+                  title="Description de l'entreprise" 
+                  className="description-card"
+                  extra={<Button type="link" icon={<EditOutlined />} onClick={() => setIsEditModalVisible(true)}>Modifier</Button>}
+                >
+                  <Text>{user?.description || "Aucune description disponible"}</Text>
+                </Card>
+              </Col>
+
+              {/* Recent Activity Card */}
+              <Col span={24}>
+                <Card title="Activité récente" className="activity-card">
+                  <Timeline>
+                    <Timeline.Item color="green">
+                      <p>Nouvelle offre publiée: Développeur Full Stack</p>
+                      <Text type="secondary">Il y a 2 jours</Text>
+                    </Timeline.Item>
+                    <Timeline.Item color="blue">
+                      <p>Profil mis à jour</p>
+                      <Text type="secondary">Il y a 5 jours</Text>
+                    </Timeline.Item>
+                    <Timeline.Item color="purple">
+                      <p>Nouvelle candidature reçue</p>
+                      <Text type="secondary">Il y a 1 semaine</Text>
+                    </Timeline.Item>
+                  </Timeline>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Edit Profile Modal */}
+            <Modal
+              title="Modifier les informations de l'entreprise"
+              open={isEditModalVisible}
+              onCancel={() => setIsEditModalVisible(false)}
+              footer={null}
+              width={600}
+              className="edit-profile-modal"
+            >
+              {user && (
+                <EmployerProfileForm 
+                  initialValues={user} 
+                  onSubmit={handleUpdateProfile} 
+                  onCancel={() => setIsEditModalVisible(false)}
+                />
+              )}
+            </Modal>
+          </div>
+        );
+      case '2':
+        if (loadingJobs) {
+          return <div>Chargement des offres...</div>;
+        }
+        return (
+          <div>
+            <h2>My Job Listings</h2>
+            {renderJobOffers()}
+          </div>
+        );
+      case 'statistics':
+        return (
+          <div>
+            <h2>Job Statistics & Analytics</h2>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} lg={8}>
+                <Card bordered={false}>
+                  <Statistic title="Applications Received" value={1128} />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <Card bordered={false}>
+                  <Statistic title="Views on Jobs" value={5600} />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <Card bordered={false}>
+                  <Statistic title="Profile Views" value={850} />
+                </Card>
+              </Col>
+            </Row>
+            <div style={{ marginTop: 24 }}>
+              <Card title="Job Views Over Time">
+                <p>Graphique Placeholder</p>
+              </Card>
+            </div>
+            <div style={{ marginTop: 24 }}>
+              <Card title="Applications by Job Type">
+                <p>Graphique Placeholder</p>
+              </Card>
+            </div>
+          </div>
+        );
+      default:
+        return <div>Contenu pour {selectedMenuItem}</div>;
+    }
   };
 
   if (loading) {
@@ -393,147 +567,7 @@ function EmployerDashboard() {
         </div>
 
         <Content className="dashboard-main">
-          {activeMenu === '1' && (
-            <>
-              <Row gutter={[24, 24]}>
-                <Col xs={24} sm={12} md={6}>
-                  <Card className="stat-card">
-                    <div className="stat-content">
-                      <div className="stat-value">1.7k+</div>
-                      <div className="stat-label">Total Visitor</div>
-                    </div>
-                    <div className="stat-icon visitor-icon">
-                      <UserOutlined />
-                    </div>
-                  </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Card className="stat-card">
-                    <div className="stat-content">
-                      <div className="stat-value">03</div>
-                      <div className="stat-label">Shortlisted</div>
-                    </div>
-                    <div className="stat-icon shortlisted-icon">
-                      <FileTextOutlined />
-                    </div>
-                  </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Card className="stat-card">
-                    <div className="stat-content">
-                      <div className="stat-value">2.1k</div>
-                      <div className="stat-label">Views</div>
-                    </div>
-                    <div className="stat-icon views-icon">
-                      <EyeOutlined />
-                    </div>
-                  </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Card className="stat-card">
-                    <div className="stat-content">
-                      <div className="stat-value">07</div>
-                      <div className="stat-label">Applied Job</div>
-                    </div>
-                    <div className="stat-icon applied-icon">
-                       <EditOutlined />
-                    </div>
-                  </Card>
-                </Col>
-              </Row>
-
-              <Row gutter={[24, 24]} className="dashboard-row">
-                <Col xs={24} lg={16}>
-                  <Card 
-                    title="Informations de l'entreprise" 
-                    className="info-card"
-                    extra={
-                      <Button 
-                        type="text" 
-                        icon={<EditOutlined />} 
-                        onClick={handleEditProfile}
-                        className="edit-profile-btn"
-                      >
-                        Modifier
-                      </Button>
-                    }
-                  >
-                    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                      <div className="info-item">
-                        <BankOutlined /> <Text strong>Nom de l'entreprise:</Text> {user?.companyName}
-                      </div>
-                      <div className="info-item">
-                        <UserOutlined /> <Text strong>Contact:</Text> {user?.fullName}
-                      </div>
-                      <div className="info-item">
-                        <PhoneOutlined /> <Text strong>Téléphone:</Text> {user?.phone || 'Non spécifié'}
-                      </div>
-                      <div className="info-item">
-                        <EnvironmentOutlined /> <Text strong>Adresse:</Text> {user?.location || 'Non spécifiée'}
-                      </div>
-                      {user?.website && (
-                        <div className="info-item">
-                          <GlobalOutlined /> <Text strong>Site web:</Text> {user.website}
-                        </div>
-                      )}
-                      {user?.description && (
-                        <div className="info-item">
-                          <FileTextOutlined /> <Text strong>Description:</Text> {user.description}
-                        </div>
-                      )}
-                    </Space>
-                  </Card>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <Card title="Activité récente" className="activity-card">
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                      <div className="activity-item">
-                        <CheckCircleOutlined className="activity-icon success" />
-                        <div className="activity-content">
-                          <Text strong>Nouvelle candidature</Text>
-                          <Text type="secondary">Il y a 2 heures</Text>
-                        </div>
-                      </div>
-                      <div className="activity-item">
-                        <EyeOutlined className="activity-icon info" />
-                        <div className="activity-content">
-                          <Text strong>Vues en hausse</Text>
-                          <Text type="secondary">Il y a 3 heures</Text>
-                        </div>
-                      </div>
-                      <div className="activity-item">
-                        <FileTextOutlined className="activity-icon primary" />
-                        <div className="activity-content">
-                          <Text strong>Nouvelle offre publiée</Text>
-                          <Text type="secondary">Il y a 1 jour</Text>
-                        </div>
-                      </div>
-                    </Space>
-                  </Card>
-                </Col>
-              </Row>
-            </>
-          )}
-
-          {activeMenu === '2' ? (
-            <>
-              <div className="section-header">
-                <Title level={3}>Mes offres d'emploi</Title>
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />}
-                  onClick={() => setIsPostJobModalVisible(true)}
-                >
-                  Publier une offre
-                </Button>
-              </div>
-              {renderJobOffers()}
-            </>
-          ) : (
-            <>
-              {/* ... existing dashboard content ... */}
-            </>
-          )}
+          {renderContent()}
         </Content>
 
         <Modal
@@ -545,75 +579,6 @@ function EmployerDashboard() {
           className="post-job-modal"
         >
           <PostJobForm onJobPosted={handleJobPosted} />
-        </Modal>
-
-        <Modal
-          title="Modifier les informations de l'entreprise"
-          open={isEditModalVisible}
-          onCancel={() => setIsEditModalVisible(false)}
-          footer={null}
-          width={600}
-          className="edit-profile-modal"
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleUpdateProfile}
-            className="edit-profile-form"
-          >
-            <Form.Item
-              name="companyName"
-              label="Nom de l'entreprise"
-              rules={[{ required: true, message: 'Veuillez entrer le nom de l\'entreprise' }]}
-            >
-              <Input prefix={<BankOutlined />} />
-            </Form.Item>
-
-            <Form.Item
-              name="fullName"
-              label="Nom du contact"
-              rules={[{ required: true, message: 'Veuillez entrer le nom du contact' }]}
-            >
-              <Input prefix={<UserOutlined />} />
-            </Form.Item>
-
-            <Form.Item
-              name="phone"
-              label="Téléphone"
-            >
-              <Input prefix={<PhoneOutlined />} />
-            </Form.Item>
-
-            <Form.Item
-              name="location"
-              label="Adresse"
-            >
-              <Input prefix={<EnvironmentOutlined />} />
-            </Form.Item>
-
-            <Form.Item
-              name="website"
-              label="Site web"
-            >
-              <Input prefix={<GlobalOutlined />} />
-            </Form.Item>
-
-            <Form.Item
-              name="description"
-              label="Description"
-            >
-              <TextArea rows={4} />
-            </Form.Item>
-
-            <Form.Item className="form-actions">
-              <Button onClick={() => setIsEditModalVisible(false)}>
-                Annuler
-              </Button>
-              <Button type="primary" htmlType="submit">
-                Enregistrer
-              </Button>
-            </Form.Item>
-          </Form>
         </Modal>
       </Layout>
     </Layout>

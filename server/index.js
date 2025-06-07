@@ -13,15 +13,17 @@ const app = express();
 // Middleware de log pour voir les requêtes entrantes
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
   next();
 });
 
 // Configuration de CORS
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3001'], // Ajouter le port 3001
+  origin: ['http://localhost:5173', 'http://localhost:3001', 'http://localhost:3000'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 
 // Middleware

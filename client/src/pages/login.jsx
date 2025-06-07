@@ -5,6 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "../components/Header";
 import "../styles/Auth.css";
+import axios from 'axios';
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -20,16 +21,18 @@ function Login() {
     // Vérifier si l'utilisateur est déjà connecté
     const checkAuth = async () => {
       try {
-        const response = await fetch("http://localhost:3000", {
-          method: "POST",
-          credentials: 'include',
+        const response = await axios.get("http://localhost:3000/api/auth/check", {
+          withCredentials: true,
         });
-        const data = await response.json();
         
-        if (data.status) {
+        if (response.data.status) {
           // Rediriger vers la page appropriée selon le rôle
-          if (data.isAdmin) {
+          if (response.data.user.role === 'admin') {
             navigate("/admin");
+          } else if (response.data.user.role === 'employer') {
+             navigate("/employer/dashboard");
+          } else if (response.data.user.role === 'candidate') {
+             navigate("/profile");
           } else {
             navigate("/");
           }
@@ -48,30 +51,14 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:3000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await axios.post('http://localhost:3000/api/auth/login', 
+        { email, password },
+        { withCredentials: true }
+      );
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.ok) {
-        // Sauvegarder le token dans le localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Définir le cookie avec le token reçu
-        setCookie("jwt", data.token, { 
-          path: "/",
-          sameSite: 'lax',
-          secure: false,
-          maxAge: 3 * 24 * 60 * 60 // 3 jours
-        });
-        
+      if (data.success) {
         toast.success("Connexion réussie !", {
           position: "top-center",
           autoClose: 2000,
@@ -83,53 +70,29 @@ function Login() {
           theme: "colored",
         });
         
-        // Rediriger en fonction du rôle ou du flag admin
-        if (data.isAdmin) {
+        if (data.user.role === 'admin') {
           navigate('/admin');
         } else if (data.user.role === 'employer') {
           navigate('/employer/dashboard');
         } else if (data.user.role === 'candidate') {
           navigate('/profile');
         } else {
-          navigate('/'); // Redirection par défaut si le rôle n'est pas reconnu
-        }
-      } else {
-        toast.error(data.message || 'Échec de la connexion', {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
+           navigate('/');
+         }
+
+      } else if (data.requiresVerification) {
+         setError(data.message || 'Votre email n\'a pas été vérifié.');
+         toast.warning(data.message || 'Votre email n\'a pas été vérifié.');
+      }
+      else {
+        setError(data.message || 'Échec de la connexion.');
+        toast.error(data.message || 'Échec de la connexion.');
       }
     } catch (error) {
       console.error('Erreur de connexion:', error);
-      if (error.message === 'Failed to fetch' || error.message.includes('ERR_CONNECTION_REFUSED')) {
-        toast.error('Impossible de se connecter au serveur. Veuillez vérifier que le serveur est en cours d\'exécution et accessible sur 127.0.0.1:3000.', {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
-      } else {
-        toast.error('Une erreur est survenue lors de la connexion', {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
-      }
+      const errorMessage = error.response?.data?.message || error.message || 'Une erreur est survenue lors de la connexion';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -198,14 +161,15 @@ function Login() {
                 />
                 <AnimatePresence>
                   {showTooltip && (
-                    <motion.div
+                    <motion.span
                       className="tooltip"
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.2 }}
                     >
-                      Format: exemple@email.com
-                    </motion.div>
+                      Entrez une adresse email valide.
+                    </motion.span>
                   )}
                 </AnimatePresence>
               </div>
@@ -215,7 +179,7 @@ function Login() {
               className="form-group"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 1 }}
+              transition={{ delay: 0.9 }}
             >
               <label htmlFor="password" className="form-label">Mot de passe</label>
               <div className="input-wrapper">
@@ -257,7 +221,7 @@ function Login() {
               whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2 }}
+              transition={{ delay: 1.0 }}
             >
               {loading ? (
                 <>
@@ -265,7 +229,7 @@ function Login() {
                   Connexion en cours...
                 </>
               ) : (
-                "Se connecter"
+                'Se connecter'
               )}
             </motion.button>
           </form>
@@ -274,11 +238,11 @@ function Login() {
             className="auth-footer"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.4 }}
+            transition={{ delay: 1.1 }}
           >
-            Pas encore de compte ?{" "}
+            Pas encore de compte ?{' '}
             <Link to="/register" className="auth-link">
-              Créer un compte
+              S'inscrire
             </Link>
           </motion.div>
         </div>

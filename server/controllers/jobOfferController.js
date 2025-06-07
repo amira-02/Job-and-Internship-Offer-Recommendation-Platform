@@ -46,7 +46,7 @@ exports.searchJobOffers = async (req, res) => {
 
     // Utiliser la recherche textuelle MongoDB si un terme de recherche est présent
     if (query) {
-       searchQuery.$text = { $search: query };
+      searchQuery.$text = { $search: query };
        // Ancienne recherche $regex (commentée)
        /*
        searchQuery.jobTitle = { $regex: query, $options: 'i' };
@@ -89,6 +89,9 @@ exports.searchJobOffers = async (req, res) => {
 // Créer une nouvelle offre d'emploi
 exports.createJobOffer = async (req, res) => {
   try {
+    console.log('Données reçues:', req.body);
+    console.log('User ID:', req.user.id);
+
     const {
       jobTitle,
       jobDescription,
@@ -102,6 +105,40 @@ exports.createJobOffer = async (req, res) => {
       address,
       country
     } = req.body;
+
+    // Vérification des données requises
+    if (!jobTitle || !jobDescription || !jobCategory || !jobType || !salaryPeriod || 
+        !minSalary || !maxSalary || !skills || !experienceLevel || !address || !country) {
+      console.log('Données manquantes:', {
+        jobTitle: !jobTitle,
+        jobDescription: !jobDescription,
+        jobCategory: !jobCategory,
+        jobType: !jobType,
+        salaryPeriod: !salaryPeriod,
+        minSalary: !minSalary,
+        maxSalary: !maxSalary,
+        skills: !skills,
+        experienceLevel: !experienceLevel,
+        address: !address,
+        country: !country
+      });
+      return res.status(400).json({
+        message: 'Tous les champs requis doivent être remplis',
+        missingFields: {
+          jobTitle: !jobTitle,
+          jobDescription: !jobDescription,
+          jobCategory: !jobCategory,
+          jobType: !jobType,
+          salaryPeriod: !salaryPeriod,
+          minSalary: !minSalary,
+          maxSalary: !maxSalary,
+          skills: !skills,
+          experienceLevel: !experienceLevel,
+          address: !address,
+          country: !country
+        }
+      });
+    }
 
     // Créer la nouvelle offre avec l'ID de l'employeur
     const jobOffer = new JobOffer({
@@ -119,14 +156,21 @@ exports.createJobOffer = async (req, res) => {
       country
     });
 
+    console.log('Tentative de sauvegarde de l\'offre:', jobOffer);
     await jobOffer.save();
+    console.log('Offre sauvegardée avec succès');
 
     res.status(201).json({
       message: 'Offre d\'emploi créée avec succès',
       jobOffer
     });
   } catch (error) {
-    console.error('Erreur lors de la création de l\'offre:', error);
+    console.error('Erreur détaillée lors de la création de l\'offre:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     res.status(500).json({
       message: 'Erreur lors de la création de l\'offre',
       error: error.message
@@ -204,7 +248,7 @@ exports.deleteJobOffer = async (req, res) => {
     console.error('Erreur lors de la suppression de l\'offre:', error);
     res.status(500).json({
       message: 'Erreur lors de la suppression de l\'offre',
-      error: error.message
+      error: error.message 
     });
   }
 }; 

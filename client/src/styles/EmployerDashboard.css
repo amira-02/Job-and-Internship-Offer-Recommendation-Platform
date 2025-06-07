@@ -195,10 +195,48 @@
   margin-top: 24px;
 }
 
+.profile-container {
+  padding: 24px;
+}
+
+.profile-header-card {
+  background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+  color: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header-card .ant-card-body {
+  padding: 32px;
+}
+
+.profile-header-card .ant-typography {
+  color: white;
+}
+
+.profile-header-card .ant-tag {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-right: 8px;
+}
+
+.profile-header-card .ant-tag .anticon {
+  margin-right: 4px;
+}
+
+.profile-avatar {
+  background: rgba(255, 255, 255, 0.2);
+  border: 3px solid white;
+}
+
 .stat-card {
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   height: 100%;
   padding: 20px 24px 16px;
@@ -213,8 +251,8 @@
 }
 
 .stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .stat-card::before,
@@ -469,6 +507,27 @@
   .header-right {
     gap: 8px;
   }
+
+  .profile-container {
+    padding: 16px;
+  }
+
+  .profile-header-card .ant-card-body {
+    padding: 24px;
+  }
+
+  .profile-header-card .ant-row {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .profile-header-card .ant-col {
+    margin-bottom: 16px;
+  }
+
+  .profile-header-card .ant-tag {
+    margin-bottom: 8px;
+  }
 }
 
 @media (max-width: 576px) {
@@ -484,7 +543,7 @@
   .dashboard-main {
     padding: 8px 0;
   }
-
+  
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
@@ -526,14 +585,13 @@
 }
 
 .edit-profile-modal .ant-modal-content {
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-}
-
+  }
+  
 .edit-profile-modal .ant-modal-header {
-  background: #f5f7fa;
+  background: #fafafa;
   border-bottom: 1px solid #f0f0f0;
-  padding: 16px 24px;
 }
 
 .edit-profile-modal .ant-modal-title {
@@ -549,14 +607,12 @@
   margin-bottom: 20px;
 }
 
-.edit-profile-form .ant-form-item-label {
+.edit-profile-form .ant-form-item-label > label {
   font-weight: 500;
 }
 
 .edit-profile-form .ant-input-affix-wrapper {
-  border-radius: 6px;
-  border: 1px solid #d9d9d9;
-  transition: all 0.3s ease;
+  border-radius: 8px;
 }
 
 .edit-profile-form .ant-input-affix-wrapper:hover {
@@ -588,7 +644,7 @@
 .form-actions .ant-btn {
   min-width: 100px;
   height: 40px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 500;
 }
 
@@ -626,7 +682,7 @@
 
 .post-job-card .ant-form-item {
   margin-bottom: 16px;
-}
+  }
 
 .post-job-card .ant-input,
 .post-job-card .ant-select-selector {
@@ -712,4 +768,31 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.description-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.description-card .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.description-card .ant-card-extra .ant-btn-link {
+  color: #1890ff;
+}
+
+.activity-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.activity-card .ant-timeline-item-content {
+  margin-left: 24px;
+}
+
+.activity-card .ant-timeline-item-content p {
+  margin-bottom: 4px;
+  font-size: 14px;
 } 

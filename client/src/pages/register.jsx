@@ -5,34 +5,38 @@ import { ToastContainer, toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '../components/Header';
 import '../styles/Auth.css';
+import axios from 'axios';
 
 const Register = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formData, setFormData] = useState({
+    firstName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    governorate: '',
+    city: '',
+    postalCode: '',
+    address: ''
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cookies, setCookie] = useCookies(['jwt']);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationLoading, setVerificationLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("http://localhost:3000", {
-          method: "POST",
-          credentials: 'include',
+        const response = await axios.get("http://localhost:3000/api/auth/check", {
+          withCredentials: true,
         });
-        const data = await response.json();
         
-        if (data.status) {
-          if (data.isAdmin) {
-            navigate("/admin");
-          } else {
+        if (response.data.status) {
             navigate("/");
-          }
         }
       } catch (err) {
         console.error("Erreur de vérification d'authentification:", err);
@@ -42,102 +46,85 @@ const Register = () => {
     checkAuth();
   }, [navigate]);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (password !== confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       setError('Les mots de passe ne correspondent pas');
-      toast.error('Les mots de passe ne correspondent pas', {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
+      toast.error('Les mots de passe ne correspondent pas');
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await axios.post('http://localhost:3000/api/auth/register', formData);
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Échec de l\'inscription');
-      }
-
-      if (data.errors) {
-        throw new Error(Object.values(data.errors).join(', '));
-      }
-
-      if (data.status && data.token) {
-        setCookie('jwt', data.token, { 
-          path: '/',
-          sameSite: 'lax',
-          secure: false
-        });
-        
-        toast.success('Inscription réussie ! Bienvenue !', {
-          position: "top-center",
-          autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
-        
-        setTimeout(() => {
-          if (data.isAdmin) {
-            navigate('/admin');
-          } else {
-            navigate('/');
-          }
-        }, 1000);
+      if (data.success) {
+        toast.success('Inscription réussie ! Veuillez vérifier votre email.');
+        setShowVerificationModal(true);
       } else {
-        throw new Error('Échec de l\'inscription');
+        setError(data.message || 'Échec de l\'inscription');
+        toast.error(data.message || 'Échec de l\'inscription');
       }
     } catch (err) {
       console.error('Erreur d\'inscription:', err);
-      setError(err.message || 'Une erreur est survenue lors de l\'inscription');
-      toast.error(err.message || 'Une erreur est survenue lors de l\'inscription', {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
+      const errorMessage = err.response?.data?.message || err.message || 'Une erreur est survenue lors de l\'inscription';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut"
+  const handleVerification = async (e) => {
+    e.preventDefault();
+    setVerificationLoading(true);
+
+    try {
+      console.log('Envoi de la requête de vérification avec:', {
+        token: verificationCode,
+        email: formData.email
+      });
+
+      const response = await axios.post('http://localhost:3000/api/auth/verify-email', {
+        token: verificationCode,
+        email: formData.email
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      });
+
+      console.log('Réponse reçue:', response.data);
+
+      if (response.data.success) {
+        toast.success('Email vérifié avec succès ! Redirection vers la connexion...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 1500);
+      } else {
+        toast.error(response.data.message || 'Code de vérification invalide.');
       }
+    } catch (err) {
+      console.error('Erreur de vérification complète:', err);
+      console.error('Détails de la requête:', err.config);
+      console.error('Réponse du serveur:', err.response?.data);
+      toast.error(err.response?.data?.message || 'Erreur lors de la vérification.');
+    } finally {
+      setVerificationLoading(false);
     }
   };
 
@@ -171,38 +158,43 @@ const Register = () => {
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
+            <div className="form-grid">
             <motion.div 
               className="form-group"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <label htmlFor="email" className="form-label">Email</label>
-              <div className="input-wrapper">
+                <label htmlFor="firstName" className="form-label">Prénom *</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  className="form-input"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="Entrez votre prénom"
+                  required
+                />
+              </motion.div>
+
+              <motion.div 
+                className="form-group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                <label htmlFor="email" className="form-label">Email *</label>
                 <input
                   type="email"
                   id="email"
+                  name="email"
                   className="form-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={formData.email}
+                  onChange={handleChange}
                   placeholder="Entrez votre email"
                   required
-                  onFocus={() => setShowTooltip(true)}
-                  onBlur={() => setShowTooltip(false)}
                 />
-                <AnimatePresence>
-                  {showTooltip && (
-                    <motion.div
-                      className="tooltip"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                    >
-                      Format: exemple@email.com
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
             </motion.div>
 
             <motion.div 
@@ -211,14 +203,15 @@ const Register = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.8 }}
             >
-              <label htmlFor="password" className="form-label">Mot de passe</label>
+                <label htmlFor="password" className="form-label">Mot de passe *</label>
               <div className="input-wrapper">
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
+                    name="password"
                   className="form-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={handleChange}
                   placeholder="Créez votre mot de passe"
                   required
                 />
@@ -236,16 +229,17 @@ const Register = () => {
               className="form-group"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 1 }}
+                transition={{ delay: 0.9 }}
             >
-              <label htmlFor="confirmPassword" className="form-label">Confirmer le mot de passe</label>
+                <label htmlFor="confirmPassword" className="form-label">Confirmer le mot de passe *</label>
               <div className="input-wrapper">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   id="confirmPassword"
+                    name="confirmPassword"
                   className="form-input"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
                   placeholder="Confirmez votre mot de passe"
                   required
                 />
@@ -258,6 +252,80 @@ const Register = () => {
                 </button>
               </div>
             </motion.div>
+
+              <motion.div 
+                className="form-group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.0 }}
+              >
+                <label htmlFor="governorate" className="form-label">Gouvernorat *</label>
+                <input
+                  type="text"
+                  id="governorate"
+                  name="governorate"
+                  className="form-input"
+                  value={formData.governorate}
+                  onChange={handleChange}
+                  placeholder="Entrez votre gouvernorat"
+                  required
+                />
+              </motion.div>
+
+              <motion.div 
+                className="form-group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.1 }}
+              >
+                <label htmlFor="city" className="form-label">Ville</label>
+                <input
+                  type="text"
+                  id="city"
+                  name="city"
+                  className="form-input"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="Entrez votre ville"
+                />
+              </motion.div>
+
+              <motion.div 
+                className="form-group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.2 }}
+              >
+                <label htmlFor="postalCode" className="form-label">Code postal</label>
+                <input
+                  type="text"
+                  id="postalCode"
+                  name="postalCode"
+                  className="form-input"
+                  value={formData.postalCode}
+                  onChange={handleChange}
+                  placeholder="Entrez votre code postal"
+                />
+              </motion.div>
+
+              <motion.div 
+                className="form-group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.3 }}
+              >
+                <label htmlFor="address" className="form-label">Adresse</label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  className="form-input"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Entrez votre adresse"
+                />
+              </motion.div>
+            </div>
 
             {error && (
               <motion.div 
@@ -278,7 +346,7 @@ const Register = () => {
               whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2 }}
+              transition={{ delay: 1.4 }}
             >
               {loading ? (
                 <>
@@ -295,7 +363,7 @@ const Register = () => {
             className="auth-footer"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.4 }}
+            transition={{ delay: 1.5 }}
           >
             Déjà un compte ?{" "}
             <Link to="/login" className="auth-link">
@@ -304,6 +372,40 @@ const Register = () => {
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Modal de vérification */}
+      {showVerificationModal && (
+        <div className="modal-overlay">
+          <motion.div 
+            className="modal-content"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+          >
+            <h2>Vérification de l'email</h2>
+            <p>Un code de vérification a été envoyé à votre email.</p>
+            <form onSubmit={handleVerification}>
+              <div className="form-group">
+                <input
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  placeholder="Entrez le code de vérification"
+                  required
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="auth-button"
+                disabled={verificationLoading}
+              >
+                {verificationLoading ? 'Vérification...' : 'Vérifier'}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
       <ToastContainer />
     </div>
   );

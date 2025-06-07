@@ -10,8 +10,8 @@ const auth = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
 
-    // Vérifier le token avec la même clé secrète que dans authControllers.js
-    const decoded = jwt.verify(token, "kishan sheth super secret key");
+    // Vérifier le token avec la clé secrète de l'environnement
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "kishan sheth super secret key");
     
     // Ajouter les informations de l'utilisateur à la requête
     req.user = {

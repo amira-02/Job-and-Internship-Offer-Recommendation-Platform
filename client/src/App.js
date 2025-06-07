@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import Header from "./components/Header";
 import Home from "./pages/Home";
 import Login from "./pages/login";
-import RegistrationWorkflow from "./pages/RegistrationWorkflow";
+import RegistrationWorkflow from "./pages/register";
 import AdminPage from "./pages/AdminPage";
 import Cards from "./pages/cards";
 import Offers from "./pages/Offers";

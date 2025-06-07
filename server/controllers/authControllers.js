@@ -1,5 +1,7 @@
 const User = require("../model/authModel");
 const jwt = require("jsonwebtoken");
+const bcryptjs = require('bcryptjs');
+const { sendVerificationEmail, sendWelcomeEmail } = require("../middleware/Email");
 
 const maxAge = 3 * 24 * 60 * 60;
 const createToken = (id, role) => {
@@ -11,17 +13,16 @@ const createToken = (id, role) => {
 const handleErrors = (err) => {
   let errors = { email: "", password: "" };
 
-  console.log(err);
   if (err.message === "incorrect email") {
-    errors.email = "That email is not registered";
+    errors.email = "Cet email n'est pas enregistré";
   }
 
   if (err.message === "incorrect password") {
-    errors.password = "That password is incorrect";
+    errors.password = "Mot de passe incorrect";
   }
 
   if (err.code === 11000) {
-    errors.email = "Email is already registered";
+    errors.email = "Cet email est déjà enregistré";
     return errors;
   }
 
@@ -34,86 +35,50 @@ const handleErrors = (err) => {
   return errors;
 };
 
-module.exports.register = async (req, res, next) => {
+module.exports.register = async (req, res) => {
   try {
-    // Log the entire request
-    console.log('Registration request received:', {
-      body: req.body,
-      file: req.file ? {
-        fieldname: req.file.fieldname,
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        buffer: req.file.buffer ? 'Buffer present' : 'No buffer'
-      } : 'No file'
-    });
-
-    // Récupérer tous les champs du corps de la requête
     const { 
-      email, 
-      password, 
-      fullName,
-      companyName, 
-      phone,
-      location,
-      website,
-      description,
-      agreement
-    } = req.body;
-
-    // Split fullName into firstName and lastName
-    const [firstName, ...lastNameParts] = fullName.split(' ');
-    const lastName = lastNameParts.join(' ');
-
-    // Préparer l'objet utilisateur
-    const userData = {
       email,
       password,
       firstName,
-      lastName,
-      role: 'employer',
-      companyName,
-      website,
-      mobileNumber: phone,
-      city: location,
-      description,
-      agreement
-    };
+      governorate,
+      city,
+      postalCode,
+      address
+    } = req.body;
 
-    // Si un CV a été uploadé, l'ajouter aux données utilisateur
-    if (req.file) {
-      console.log('Processing CV upload:', {
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        bufferSize: req.file.buffer ? req.file.buffer.length : 0
-      });
-      
-      userData.cv = {
-        data: req.file.buffer,
-        contentType: req.file.mimetype,
-        fileName: req.file.originalname
-      };
+    const userName = firstName;
+
+    if (!email || !password || !firstName) {
+      return res.status(400).json({ success: false, message: "Les champs email, mot de passe et prénom sont requis." });
     }
 
-    // Créer l'utilisateur avec toutes les données fournies
-    const user = await User.create(userData);
-    
-    // Vérifier si le CV a été correctement stocké
-    const savedUser = await User.findById(user._id);
-    console.log('User saved with CV:', {
-      userId: savedUser._id,
-      hasCV: !!savedUser.cv,
-      cvDetails: savedUser.cv ? {
-        hasData: !!savedUser.cv.data,
-        dataSize: savedUser.cv.data ? savedUser.cv.data.length : 0,
-        contentType: savedUser.cv.contentType,
-        fileName: savedUser.cv.fileName
-      } : 'No CV'
+    const ExistsUser = await User.findOne({ email });
+    if (ExistsUser) {
+      return res.status(400).json({ success: false, message: "Cet utilisateur existe déjà. Veuillez vous connecter." });
+    }
+
+    // Générer un token à 6 chiffres
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log('Token généré:', verificationToken);
+
+    const user = new User({
+      email,
+      password,
+      firstName: firstName,
+      governorate,
+      city,
+      postalCode,
+      address,
+      role: 'candidate',
+      verificationToken,
+      verificationTokenExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 heures
     });
 
-    const token = createToken(user._id, user.role);
+    await user.save();
+    console.log('Utilisateur créé avec le token:', user.verificationToken);
 
+    const token = createToken(user._id, user.role);
     res.cookie("jwt", token, {
       withCredentials: true,
       httpOnly: false,
@@ -123,142 +88,169 @@ module.exports.register = async (req, res, next) => {
       domain: 'localhost'
     });
 
-    res.status(201).json({ 
+    await sendVerificationEmail(user.email, verificationToken);
+    console.log('Email de vérification envoyé à:', user.email);
+
+    return res.status(201).json({ 
+      success: true, 
+      message: "Utilisateur enregistré avec succès. Un code de vérification a été envoyé à votre email.", 
       user: user._id, 
-      status: true,
-      token: token,
-      role: user.role
+      token: token, 
+      role: user.role 
     });
-  } catch (err) {
-    console.error('Registration error:', err);
-    const errors = handleErrors(err);
+  } catch (error) {
+    console.error('Registration error:', error);
+    const errors = handleErrors(error);
     const errorMessage = Object.values(errors).find(msg => msg !== '') || 'Échec de l\'enregistrement.';
-    res.json({ status: false, message: errorMessage, errors });
+    res.status(400).json({ success: false, message: errorMessage, errors });
+  }
+};
+
+module.exports.verifyEmail = async (req, res) => {
+  try {
+    console.log('Vérification email - Requête reçue:', req.body);
+    const { token, email } = req.body;
+
+    if (!token || !email) {
+      console.log('Vérification email - Données manquantes:', { token, email });
+      return res.status(400).json({ 
+        success: false, 
+        message: "Token et email requis." 
+      });
+    }
+
+    // Rechercher l'utilisateur par email d'abord
+    const user = await User.findOne({ email });
+    console.log('Vérification email - Utilisateur trouvé par email:', user ? 'Oui' : 'Non');
+
+    if (!user) {
+      console.log('Vérification email - Aucun utilisateur trouvé avec cet email');
+      return res.status(400).json({ 
+        success: false, 
+        message: "Aucun utilisateur trouvé avec cet email." 
+      });
+    }
+
+    // Vérifier le token
+    console.log('Vérification email - Token stocké:', user.verificationToken);
+    console.log('Vérification email - Token reçu:', token);
+    console.log('Vérification email - Token expiré:', user.verificationTokenExpiresAt < new Date());
+
+    if (user.verificationToken !== token) {
+      console.log('Vérification email - Token ne correspond pas');
+      return res.status(400).json({ 
+        success: false, 
+        message: "Code de vérification incorrect." 
+      });
+    }
+
+    if (user.verificationTokenExpiresAt < new Date()) {
+      console.log('Vérification email - Token expiré');
+      return res.status(400).json({ 
+        success: false, 
+        message: "Code de vérification expiré." 
+      });
+    }
+
+    // Mettre à jour l'utilisateur
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpiresAt = undefined;
+
+    await user.save();
+    console.log('Vérification email - Utilisateur mis à jour avec succès');
+
+    // Envoyer l'email de bienvenue
+    try {
+      await sendWelcomeEmail(user.email, user.firstName || user.name);
+      console.log('Vérification email - Email de bienvenue envoyé');
+    } catch (emailError) {
+      console.error('Vérification email - Erreur lors de l\'envoi de l\'email de bienvenue:', emailError);
+      // On continue même si l'email de bienvenue échoue
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      message: "Email vérifié avec succès.", 
+      user: user._id 
+    });
+  } catch (error) {
+    console.error('Vérification email - Erreur détaillée:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Erreur interne du serveur lors de la vérification de l'email." 
+    });
   }
 };
 
 module.exports.login = async (req, res) => {
   const { email, password } = req.body;
   
-  // Vérification des identifiants admin
-  if (email === "admin@gmail.com" && password === "admin") {
-    const token = createToken("admin", "admin");
-    res.cookie("jwt", token, { 
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: maxAge * 1000,
-      path: '/',
-      domain: 'localhost'
-    });
-    res.status(200).json({ 
-      user: { email: email, role: "admin" },
-      isAdmin: true,
-      status: true,
-      token: token
-    });
-    return;
-  }
-
-  // Pour tous les autres utilisateurs
   try {
     const user = await User.login(email, password);
     
-    // Si User.login réussit, créez le token et définissez le cookie
+    if (!user.isVerified) {
+      return res.status(401).json({ success: false, message: "Veuillez vérifier votre email avant de vous connecter.", requiresVerification: true });
+    }
+
     const token = createToken(user._id, user.role);
     
     res.cookie("jwt", token, { 
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      withCredentials: true,
+      httpOnly: false,
       maxAge: maxAge * 1000,
-      path: '/',
+      sameSite: 'lax',
+      secure: false,
       domain: 'localhost'
     });
 
-    // Préparer les données utilisateur à renvoyer
-    const userData = {
-      id: user._id,
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName
-    };
-
-    // Ajouter les données spécifiques selon le rôle
-    if (user.role === 'employer') {
-      userData.companyName = user.companyName;
-      userData.website = user.website;
-      userData.mobileNumber = user.mobileNumber;
-      userData.city = user.city;
-      userData.description = user.description;
-    }
-
-    res.status(200).json({ 
-      user: userData,
-      isAdmin: false,
-      status: true,
-      token: token
+    return res.status(200).json({ 
+      success: true, 
+      message: "Connexion réussie", 
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName
+      }
     });
-
-  } catch (err) {
-    // Si User.login lance une exception (par exemple, mauvais mot de passe)
-    console.error('Login failed:', err.message);
-    const errors = handleErrors(err);
-    
-    // Renvoie une réponse d'erreur d'authentification
-    res.status(401).json({ errors, status: false, message: errors.email || errors.password || 'Identifiants invalides' });
+  } catch (error) {
+    console.error('Login error:', error);
+    const errors = handleErrors(error);
+    const errorMessage = Object.values(errors).find(msg => msg !== '') || 'Échec de la connexion.';
+    res.status(400).json({ success: false, message: errorMessage, errors });
   }
 };
 
 module.exports.checkUser = async (req, res) => {
+  try {
   const token = req.cookies.jwt;
-  if (token) {
-    jwt.verify(token, "kishan sheth super secret key", async (err, decodedToken) => {
-      if (err) {
-        res.json({ status: false });
-      } else {
-        // Si c'est l'admin
-        if (decodedToken.id === "admin") {
+    if (!token) {
+      return res.json({ status: false });
+    }
+
+    const decoded = jwt.verify(token, "kishan sheth super secret key");
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.json({ status: false });
+    }
+
           res.json({ 
             status: true, 
-            user: "admin@gmail.com",
-            isAdmin: true 
-          });
-          return;
-        }
-
-        // Pour les autres utilisateurs
-        const user = await User.findById(decodedToken.id);
-        if (user) {
-          const userData = {
+      user: {
             id: user._id,
             email: user.email,
             role: user.role,
             firstName: user.firstName,
-            lastName: user.lastName
-          };
-
-          // Ajouter les données spécifiques selon le rôle
-          if (user.role === 'employer') {
-            userData.companyName = user.companyName;
-            userData.website = user.website;
-            userData.mobileNumber = user.mobileNumber;
-            userData.city = user.city;
-            userData.description = user.description;
-          }
-
-          res.json({ 
-            status: true, 
-            user: userData,
-            isAdmin: false 
-          });
-        } else {
-          res.json({ status: false });
-        }
+        governorate: user.governorate,
+        city: user.city,
+        postalCode: user.postalCode,
+        address: user.address,
+        isVerified: user.isVerified
       }
-    });
-  } else {
+          });
+  } catch (err) {
     res.json({ status: false });
   }
 };
