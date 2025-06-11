@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Select, Tag, Space, Typography, Card, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import axios from 'axios';
+import { useCookies } from 'react-cookie';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -10,6 +12,7 @@ const PostJobForm = ({ onJobPosted }) => {
   const [skills, setSkills] = useState([]);
   const [inputVisible, setInputVisible] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [cookies] = useCookies(['jwt']);
 
   const handleCloseSkill = (removedSkill) => {
     const newSkills = skills.filter((skill) => skill !== removedSkill);
@@ -34,23 +37,25 @@ const PostJobForm = ({ onJobPosted }) => {
 
   const handleFormSubmit = async (values) => {
     try {
-    const jobData = {
-      ...values,
+      const jobData = {
+        ...values,
         skills: skills,
-    };
+      };
 
-      const response = await fetch('http://localhost:3000/api/joboffers', {
-        method: 'POST',
+      if (!cookies.jwt) {
+        message.error('Authentification requise. Veuillez vous connecter.');
+        return;
+      }
+
+      const response = await axios.post('http://localhost:3000/api/joboffers', jobData, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${cookies.jwt}`
         },
-        body: JSON.stringify(jobData),
+        withCredentials: true,
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         message.success('Offre d\'emploi publiée avec succès !');
         form.resetFields();
         setSkills([]);
@@ -58,11 +63,11 @@ const PostJobForm = ({ onJobPosted }) => {
           onJobPosted();
         }
       } else {
-        message.error(result.message || 'Erreur lors de la publication de l\'offre');
+        message.error(response.data.message || 'Erreur lors de la publication de l\'offre');
       }
     } catch (error) {
       console.error('Erreur lors de la soumission du formulaire:', error);
-      message.error('Une erreur est survenue lors de la soumission du formulaire');
+      message.error(error.response?.data?.message || 'Une erreur est survenue lors de la soumission du formulaire');
     }
   };
 

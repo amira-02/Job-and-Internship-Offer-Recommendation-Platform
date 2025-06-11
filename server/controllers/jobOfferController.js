@@ -1,5 +1,42 @@
 const JobOffer = require('../model/JobOfferModel');
 
+const User = require('../model/authModel');
+
+const { sendConfirmationEmail,sendAcceptanceEmail, sendRejectionEmail } = require('../middleware/Email');
+
+
+
+
+exports.applyToJobOffer = async (req, res) => {
+  const { id } = req.params;
+  const { email } = req.body;
+  try {
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = new User({ email, appliedOffers: [] });
+      await user.save();
+    }
+    const offer = await JobOffer.findById(id);
+    if (!offer) return res.status(404).json({ message: 'Offre non trouvée' });
+
+    if (!user.appliedOffers.includes(id)) {
+      user.appliedOffers.push(id);
+      await user.save();
+    }
+    if (!offer.candidates.includes(user._id)) {
+      offer.candidates.push(user._id);
+      await offer.save();
+    }
+
+await sendConfirmationEmail(email, offer.title || offer.jobTitle)
+
+    res.json({ message: 'Candidature envoyée avec succès' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
 // Récupérer toutes les offres d'emploi
 exports.getAllJobOffers = async (req, res) => {
   try {
@@ -252,3 +289,37 @@ exports.deleteJobOffer = async (req, res) => {
     });
   }
 }; 
+
+exports.getOfferCandidates = async (req, res) => {
+  try {
+    const offer = await JobOffer.findById(req.params.id).populate('candidates');
+    if (!offer) return res.status(404).json({ message: 'Offre non trouvée' });
+    res.json({ candidates: offer.candidates });
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+
+
+exports.handleCandidateDecision = async (req, res) => {
+  const { id } = req.params; // ID de la candidature
+  const { decision, email, firstName,offerTitle } = req.body; // 'accepted' ou 'rejected'
+
+  try {
+    if (decision === 'accepted') {
+      await sendAcceptanceEmail(email, firstName, offerTitle);
+    } else if (decision === 'rejected') {
+      await sendRejectionEmail(email,firstName, offerTitle);
+    } else {
+      return res.status(400).json({ message: "Décision invalide" });
+    }
+
+    // Ici tu peux aussi mettre à jour le statut de la candidature en DB si tu veux
+
+    res.status(200).json({ message: `Email de ${decision} envoyé.` });
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email :", error);
+    res.status(500).json({ message: "Erreur lors du traitement de la décision." });
+  }
+};

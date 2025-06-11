@@ -145,55 +145,45 @@ const ProfilePage = () => {
     }
   }, [cookies.jwt]); // Dépend de cookies.jwt
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadProfile = async () => {
-      setLoading(true);
-      setError(null);
+useEffect(() => {
+  let isMounted = true;
+  const loadProfile = async () => {
+    setLoading(true);
+    setError(null);
 
-      if (!cookies.jwt) {
-        if (isMounted) {
-          setUserData(null);
-          if (window.location.pathname !== '/login') {
-            navigate('/login');
-          }
-        }
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const data = await fetchUserData();
-        if (isMounted) {
-          setUserData(data);
-        }
-      } catch (err) {
-        console.error('Erreur de traitement du profil dans useEffect:', err);
-        if (isMounted) {
-          if (err.message === 'Unauthorized') {
-            removeCookie('jwt', { path: '/' });
-            // La navigation vers /login sera déclenchée par le changement de cookies.jwt
-            if (window.location.pathname !== '/login') {
-              navigate('/login');
-            }
-          } else {
-            setError(err.response?.data?.message || 'Erreur lors du chargement du profil');
-          }
-          setUserData(null);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
+    if (!cookies.jwt) {
+      if (isMounted) {
+        setUserData(null);
+        if (window.location.pathname !== '/login') {
+          navigate('/login');
         }
       }
-    };
+      setLoading(false);
+      return;
+    }
 
-    loadProfile();
+    try {
+      const data = await fetchUserData();
+      if (isMounted) {
+        // Correction ici :
+        setUserData({
+          ...data,
+          cv: Array.isArray(data.cv) ? data.cv : data.cv ? [data.cv] : []
+        });
+      }
+    } catch (err) {
+      // ... gestion d'erreur ...
+    } finally {
+      if (isMounted) setLoading(false);
+    }
+  };
 
-    return () => {
-      isMounted = false;
-    };
-  }, [cookies.jwt, navigate, removeCookie, fetchUserData]); // Ajout de fetchUserData aux dépendances
+  loadProfile();
+  return () => { isMounted = false; };
+}, [cookies.jwt, navigate, removeCookie, fetchUserData]);
+
+
+
 
   useEffect(() => {
     if (userData) {
@@ -565,37 +555,20 @@ const ProfilePage = () => {
 
   const handleCvFileChange = async (event) => {
     const file = event.target.files[0];
-    if (!file) {
-      console.log('Aucun fichier sélectionné');
-      return;
-    }
-
-    // Vérifications préliminaires
+    if (!file) return;
     if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
       setError('Le fichier doit être au format PDF ou Word');
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       setError('Le fichier ne doit pas dépasser 5MB');
       return;
     }
-
-    console.log('Fichier CV sélectionné:', {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      lastModified: new Date(file.lastModified).toISOString()
-    });
-
     const formData = new FormData();
     formData.append('cv', file);
-
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('Envoi de la requête au serveur...');
       const response = await axios({
         method: 'patch',
         url: 'http://localhost:3000/api/auth/profile/cv',
@@ -606,23 +579,17 @@ const ProfilePage = () => {
         },
         withCredentials: true
       });
-
-      console.log('Réponse du serveur:', response.data);
-
       if (response.data.status) {
-        // Mettre à jour les données utilisateur
+        setUserData(prev => ({
+          ...prev,
+          cv: response.data.cv
+        }));
         await fetchUserData();
         setError(null);
       } else {
         throw new Error(response.data.message || 'Erreur lors de l\'upload du CV');
       }
     } catch (err) {
-      console.error('Erreur détaillée lors de l\'upload du CV:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
-      
       setError(
         err.response?.data?.message || 
         err.message || 
@@ -634,38 +601,11 @@ const ProfilePage = () => {
     }
   };
 
-  const handleDeleteCV = async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre CV ?')) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await axios.delete('http://localhost:3000/api/auth/profile/cv', {
-        headers: {
-          'Authorization': `Bearer ${cookies.jwt}`
-        },
-        withCredentials: true
-      });
-
-      if (response.data.status) {
-        await fetchUserData(); // Recharger les données utilisateur
-        setError(null);
-      }
-    } catch (err) {
-      console.error('Erreur lors de la suppression du CV:', err);
-      setError(err.response?.data?.message || 'Erreur lors de la suppression du CV');
-    } finally {
-      setLoading(false);
-      handleCvMenuClose();
-    }
-  };
-
   const handleOpenCvAnalysis = async () => {
     try {
       console.log("Vérification du CV...", userData?.cv);
     
-    if (!userData?.cv) {
+    if (!userData?.cv || userData.cv.length === 0) {
         setError("Aucun CV n'a été téléchargé. Veuillez d'abord télécharger un CV.");
         return;
     }
@@ -684,7 +624,7 @@ const ProfilePage = () => {
             });
 
         // Créer un fichier à partir du blob
-        const cvFile = new File([cvResponse.data], userData.cv.fileName, {
+        const cvFile = new File([cvResponse.data], userData.cv[0].fileName, {
           type: cvResponse.headers['content-type']
         });
         
@@ -1164,7 +1104,7 @@ const ProfilePage = () => {
                           CV
                         </Typography>
                       </Stack>
-                      {userData?.cv?.fileName && (
+                      {userData?.cv && userData.cv.length > 0 && (
                         <IconButton 
                           onClick={handleCvMenuOpen}
                           sx={{ 
@@ -1178,52 +1118,59 @@ const ProfilePage = () => {
                     </Stack>
                     <Divider sx={{ borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08) }} />
                     
-                    {userData?.cv?.fileName ? (
-                      <Stack direction="row" spacing={1}>
-                        <Tooltip title="Voir l'analyse du CV">
-                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                            <IconButton 
-                              onClick={handleOpenCvAnalysis}
-                          sx={{ 
+                    {userData?.cv && userData.cv.length > 0 ? (
+                      <Stack spacing={1}>
+                        {userData.cv.map((cvFile, idx) => (
+                          <Stack key={idx} direction="row" spacing={1} alignItems="center">
+                            <Typography variant="body2">{cvFile.fileName}</Typography>
+                            <IconButton
+                              onClick={() => window.open(`http://localhost:3000/api/auth/cv/${userData._id}/${idx}`, '_blank')}
+                              sx={{
                                 color: '#1976d2',
                                 bgcolor: alpha('#1976d2', 0.1),
                                 '&:hover': { bgcolor: alpha('#1976d2', 0.2) }
+                              }}
+                            >
+                              <DownloadIcon />
+                            </IconButton>
+                            <IconButton
+                              onClick={async () => {
+                                if (window.confirm('Supprimer ce CV ?')) {
+                                  setLoading(true);
+                                  try {
+                                    await axios.delete(`http://localhost:3000/api/auth/cv/${userData._id}/${idx}`, {
+                                      headers: { 'Authorization': `Bearer ${cookies.jwt}` },
+                                      withCredentials: true
+                                    });
+                                    await fetchUserData();
+                                  } catch (err) {
+                                    setError('Erreur lors de la suppression du CV');
+                                  } finally {
+                                    setLoading(false);
+                                  }
+                                }
+                              }}
+                              sx={{ color: '#d32f2f', bgcolor: alpha('#d32f2f', 0.1), '&:hover': { bgcolor: alpha('#d32f2f', 0.2) } }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Stack>
+                        ))}
+                        <Button
+                          variant="outlined"
+                          startIcon={<AddIcon />}
+                          onClick={() => cvFileInputRef.current?.click()}
+                          sx={{
+                            borderColor: '#1976d2',
+                            color: '#1976d2',
+                            '&:hover': {
+                              borderColor: '#1976d2',
+                              bgcolor: alpha('#1976d2', 0.1)
+                            }
                           }}
                         >
-                              <AssessmentIcon />
-                            </IconButton>
-                          </motion.div>
-                        </Tooltip>
-                          <Tooltip title="Télécharger le CV">
-                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                              <IconButton 
-                                onClick={handleDownloadCV} 
-                                sx={{ 
-                                  color: '#1976d2',
-                                  bgcolor: alpha('#1976d2', 0.1),
-                                  '&:hover': { bgcolor: alpha('#1976d2', 0.2) }
-                                }}
-                              >
-                                <DownloadIcon />
-                              </IconButton>
-                            </motion.div>
-                          </Tooltip>
-                        {!userData.cv.data && (
-                          <Tooltip title="Télécharger à nouveau le CV">
-                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                              <IconButton 
-                                onClick={() => cvFileInputRef.current?.click()}
-                                sx={{ 
-                                  color: '#ff9800',
-                                  bgcolor: alpha('#ff9800', 0.1),
-                                  '&:hover': { bgcolor: alpha('#ff9800', 0.2) }
-                                }}
-                              >
-                                <AddIcon />
-                              </IconButton>
-                            </motion.div>
-                          </Tooltip>
-                        )}
+                          Ajouter un CV
+                        </Button>
                       </Stack>
                     ) : (
                       <Stack spacing={2}>
@@ -1260,7 +1207,7 @@ const ProfilePage = () => {
                 />
 
                 {/* Menu pour les actions du CV - uniquement visible si un CV existe */}
-                {userData?.cv?.fileName && (
+                {userData?.cv && userData.cv.length > 0 && (
                   <Menu
                     anchorEl={cvMenuAnchor}
                     open={Boolean(cvMenuAnchor)}
@@ -1294,9 +1241,12 @@ const ProfilePage = () => {
                       <EditIcon sx={{ mr: 2, color: '#1976d2' }} />
                       Changer le CV
                     </MenuItem>
-                    <MenuItem onClick={handleDeleteCV} sx={{ color: '#d32f2f' }}>
-                      <DeleteIcon sx={{ mr: 2, color: '#d32f2f' }} />
-                      Supprimer le CV
+                    <MenuItem onClick={() => {
+                      handleCvMenuClose();
+                      cvFileInputRef.current?.click();
+                    }}>
+                      <AddIcon sx={{ mr: 2, color: '#1976d2' }} />
+                      Ajouter un CV
                     </MenuItem>
                   </Menu>
                 )}

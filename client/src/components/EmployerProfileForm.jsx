@@ -13,13 +13,21 @@ const { TextArea } = Input;
 function EmployerProfileForm({ initialValues, onSubmit, onCancel }) {
   const [form] = Form.useForm();
 
+  // Log quand le composant reçoit les props
+  console.log("EmployerProfileForm received props. Type of onSubmit:", typeof onSubmit);
+
   // Mettre à jour le formulaire quand les initialValues changent
   React.useEffect(() => {
     form.setFieldsValue(initialValues);
   }, [initialValues, form]);
 
   const handleFinish = (values) => {
-    onSubmit(values);
+    console.log("EmployerProfileForm - handleFinish called. Type of onSubmit before call:", typeof onSubmit);
+    if (typeof onSubmit === 'function') {
+      onSubmit(values);
+    } else {
+      console.error("EmployerProfileForm - onSubmit is not a function at call time.", onSubmit);
+    }
   };
 
   return (

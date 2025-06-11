@@ -156,4 +156,48 @@ module.exports.verifyEmail = async (req, res) => {
       message: "Erreur lors de la vérification de l'email."
     });
   }
+};
+
+module.exports.updateProfile = async (req, res) => {
+  try {
+    console.log('EmployerProfile - Requête de mise à jour reçue:', req.body);
+    const userId = req.user.id; // L'ID utilisateur est attaché par le middleware d'authentification
+    const updates = req.body; // Les données mises à jour sont dans le corps de la requête
+
+    // Options pour findByIdAndUpdate: new: true retourne le document mis à jour
+    // runValidators: true exécute les validateurs du schéma sur les mises à jour
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, { new: true, runValidators: true });
+    console.log('EmployerProfile - Utilisateur mis à jour (après DB):', updatedUser);
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Utilisateur non trouvé." });
+    }
+
+    // Retourner les données de l'utilisateur mis à jour (sans le mot de passe)
+    const userProfile = {
+      id: updatedUser._id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      companyName: updatedUser.companyName,
+      website: updatedUser.website,
+      phone: updatedUser.phone,
+      location: updatedUser.location,
+      description: updatedUser.description,
+      role: updatedUser.role,
+    };
+
+    res.status(200).json({ 
+      success: true,
+      message: "Profil mis à jour avec succès.", 
+      user: userProfile 
+    });
+
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du profil employeur:", error);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ success: false, message: messages.join(', ') });
+    }
+    res.status(500).json({ success: false, message: "Erreur interne du serveur lors de la mise à jour du profil." });
+  }
 }; 

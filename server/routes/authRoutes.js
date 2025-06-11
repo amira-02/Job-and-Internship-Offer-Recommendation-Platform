@@ -6,7 +6,7 @@ const { requireAuth } = require('../middleware/authMiddleware');
 const User = require('../model/authModel');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
-
+// const User = require('../model/authModel');
 // Modifier le middleware upload pour accepter les fichiers PDF et Word
 const cvUpload = multer({
   storage: multer.memoryStorage(),
@@ -107,19 +107,23 @@ router.patch('/profile/cv', requireAuth, cvUpload.single('cv'), async (req, res)
     }
 
     // Mettre à jour le CV de l'utilisateur
-    user.cv = {
-      data: req.file.buffer,
-      contentType: req.file.mimetype,
-      fileName: req.file.originalname
-    };
-
+     if (!user.cv) user.cv = [];
+        user.cv.push({
+        data: req.file.buffer,
+          contentType: req.file.mimetype,
+          fileName: req.file.originalname,
+          uploadedAt: new Date()
+        });
     await user.save();
 
     res.status(200).json({ 
-      status: true,
-      message: "CV mis à jour avec succès",
-      cv: { fileName: user.cv.fileName }
-    });
+  status: true,
+  message: "CV ajouté avec succès",
+  cv: user.cv.map(cv => ({
+    fileName: cv.fileName,
+    uploadedAt: cv.uploadedAt
+  }))
+});
   } catch (error) {
     console.error("Erreur lors de l'upload du CV:", error);
     res.status(500).json({ 
@@ -189,4 +193,48 @@ router.post('/logout', (req, res) => {
   }
 });
 
+router.get('/cv/list/:userId', async (req, res) => {
+  const user = await User.findById(req.params.userId);
+  if (user && user.cv && user.cv.length > 0) {
+    res.json(user.cv.map((cv, idx) => ({
+      index: idx,
+      fileName: cv.fileName,
+      uploadedAt: cv.uploadedAt
+    })));
+  } else {
+    res.json([]);
+  }
+});
+
+router.get('/cv/:userId/:cvIndex', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    const cvIndex = parseInt(req.params.cvIndex, 10);
+
+    if (user && user.cv && user.cv[cvIndex]) {
+      const cv = user.cv[cvIndex];
+      res.contentType(cv.contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${cv.fileName}"`);
+      res.send(cv.data);
+    } else {
+      res.status(404).send('CV non trouvé');
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération du CV:', error);
+    res.status(500).send('Erreur serveur');
+  }
+});
+
+                 
+router.delete('/cv/:userId/:cvIndex', async (req, res) => {
+  const user = await User.findById(req.params.userId);
+  const cvIndex = parseInt(req.params.cvIndex, 10);
+  if (user && user.cv && user.cv[cvIndex]) {
+    user.cv.splice(cvIndex, 1);
+    await user.save();
+    res.json({ status: true, message: 'CV supprimé' });
+  } else {
+    res.status(404).json({ status: false, message: 'CV non trouvé' });
+  }
+});
 module.exports = router;

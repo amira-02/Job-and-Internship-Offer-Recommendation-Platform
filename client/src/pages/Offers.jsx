@@ -9,6 +9,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { useTheme } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 
 const jobTypes = [
   'Fulltime',
@@ -259,6 +260,8 @@ const Offers = () => {
     setSearchTerm(e.target.value);
     setCurrentPage(1); // Réinitialiser la pagination lors de la recherche
   };
+
+  const navigate = useNavigate();
 
   return (
     <div
@@ -618,7 +621,10 @@ const Offers = () => {
                       )}
                     </div>
                     <div style={{ color: '#1a1a1a', fontWeight: 600, marginBottom: 8 }}>{salaryDisplay}</div>
-                    <button style={{ marginTop: 'auto', alignSelf: 'flex-end', background: '#e8f1fa', color: '#1976d2', border: 'none', borderRadius: 10, padding: '8px 24px', fontWeight: 600, cursor: 'pointer' }}>APPLY</button>
+                    <button
+                      style={{ marginTop: 'auto', alignSelf: 'flex-end', background: '#e8f1fa', color: '#1976d2', border: 'none', borderRadius: 10, padding: '8px 24px', fontWeight: 600, cursor: 'pointer' }}
+                      onClick={() => navigate(`/offers/${offer._id}/apply`)}
+                    >APPLY</button>
                   </div>
                 );
               })}

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, verifyEmail } = require('../controllers/employerControllers');
+const { register, verifyEmail, updateProfile } = require('../controllers/employerControllers');
 const auth = require('../middleware/auth');
 
 // Routes publiques
@@ -9,6 +9,9 @@ router.post('/verify-email', verifyEmail);
 
 // Routes protégées
 router.use(auth); // Middleware d'authentification pour toutes les routes suivantes
+
+// Routes spécifiques aux employeurs
+router.put('/profile', updateProfile); // Ajout de la route pour mettre à jour le profil
 
 // Ajoutez ici les autres routes protégées pour les employeurs
 // Par exemple :

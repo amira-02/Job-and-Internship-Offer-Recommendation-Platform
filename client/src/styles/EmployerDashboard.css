@@ -18,13 +18,9 @@
 }
 
 .company-profile {
-  padding: 20px 16px;
+  padding: 24px;
   text-align: center;
-  background: linear-gradient(135deg, #f9f9f9 0%, #f9f9f9 100%);
-  color: rgb(0, 0, 0);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  border-bottom: 1px solid #f0f0f0;
 }
 /* 
 .company-profile::before {
@@ -39,8 +35,8 @@
 } */
 
 .company-avatar {
-  background: rgba(0, 0, 0, 0.15);
-  margin-bottom: 12px;
+  background: #1890ff;
+  margin-bottom: 16px;
   transition: all 0.3s ease;
   border: 2px solid rgba(0, 0, 0, 0.2);
   padding: 6px;
@@ -57,8 +53,8 @@
 }
 
 .company-name {
+  margin: 8px 0 !important;
   color: rgb(0, 0, 0) !important;
-  margin-bottom: 4px !important;
   font-weight: 600 !important;
   font-size: 14px !important;
   position: relative;
@@ -66,15 +62,16 @@
 }
 
 .company-email {
+  display: block;
+  margin-bottom: 16px;
   color: rgba(0, 0, 0, 0.9) !important;
-  margin-bottom: 12px;
   font-size: 12px;
   position: relative;
   z-index: 2;
 }
 
 .profile-progress {
-  margin-top: 12px;
+  margin-top: 16px;
   position: relative;
   z-index: 2;
 }
@@ -129,10 +126,9 @@
 }
 
 .dashboard-content {
-  margin-left: 240px;
-  transition: all 0.3s ease;
-  min-height: 100vh;
-  padding: 0 24px;
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  background: #f0f2f5;
 }
 
 .dashboard-content.collapsed {
@@ -419,7 +415,7 @@
 
 /* Mobile Drawer */
 .mobile-drawer .ant-drawer-content-wrapper {
-  width: 240px !important;
+  width: 250px !important;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
 }
 
@@ -462,7 +458,7 @@
 @media (max-width: 768px) {
   .dashboard-content {
     margin-left: 0 !important;
-    padding: 0 16px;
+    padding: 16px;
   }
 
   .dashboard-header {
@@ -527,6 +523,17 @@
 
   .profile-header-card .ant-tag {
     margin-bottom: 8px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
   }
 }
 
@@ -795,4 +802,145 @@
 .activity-card .ant-timeline-item-content p {
   margin-bottom: 4px;
   font-size: 14px;
+}
+
+.dashboard-card {
+  height: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  margin-bottom: 24px;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-details p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.my-jobs-section,
+.messages-section,
+.post-job-section,
+.saved-candidates-section,
+.subscription-section,
+.notifications-section {
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  background: #f0f2f5;
+}
+
+.drawer-close-button {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 1;
+}
+
+.site-layout {
+  margin-left: 200px;
+  transition: all 0.2s;
+}
+
+.site-layout.collapsed {
+  margin-left: 80px;
+}
+
+.dashboard-header-placeholder {
+  height: 64px;
+  background: #fff;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 200px;
+  z-index: 999;
+  transition: all 0.2s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-header-placeholder.collapsed {
+  left: 80px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .site-layout {
+    margin-left: 0 !important;
+  }
+
+  .dashboard-header-placeholder {
+    left: 0 !important;
+  }
+
+  .dashboard-content {
+    padding: 16px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .dashboard-card {
+    margin-bottom: 16px;
+  }
+}
+
+/* Chart container styles */
+.chart-container {
+  width: 100%;
+  height: 300px;
+  position: relative;
+}
+
+/* Card content styles */
+.ant-card-body {
+  padding: 24px;
+}
+
+/* Statistics row styles */
+.statistics-row {
+  margin-bottom: 24px;
+}
+
+/* Empty state styles */
+.empty-state {
+  text-align: center;
+  padding: 48px 0;
+}
+
+/* Modal styles */
+.ant-modal {
+  max-width: 90vw;
+}
+
+.ant-modal-body {
+  max-height: 80vh;
+  overflow-y: auto;
 } 

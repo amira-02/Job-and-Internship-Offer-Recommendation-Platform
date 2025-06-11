@@ -71,7 +71,8 @@ const jobOfferSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  candidates: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Users' }],
 });
 
 // Ajouter un index textuel pour la recherche

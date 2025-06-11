@@ -26,8 +26,10 @@ import {
   NotificationOutlined,
   HeartOutlined,
   DollarCircleOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  DashboardOutlined
 } from '@ant-design/icons';
+import { AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import PostJobForm from '../components/PostJobForm';
 import EmployerProfileForm from '../components/EmployerProfileForm';
 import axios from 'axios';
@@ -146,6 +148,7 @@ function EmployerDashboard() {
     }
 
     if (e.key === 'edit-profile') {
+      console.log("Opening Edit Profile Modal. Type of handleUpdateProfile:", typeof handleUpdateProfile);
       setIsEditModalVisible(true);
     }
 
@@ -154,8 +157,9 @@ function EmployerDashboard() {
     }
   };
 
-  const handleUpdateProfile = async (values) => {
+  const handleUpdateProfile = useCallback(async (values) => {
     try {
+      console.log('EmployerDashboard - handleUpdateProfile - Sending values:', values);
       const response = await axios.put('http://localhost:3000/api/employer/profile', values, {
         headers: {
           'Authorization': `Bearer ${cookies.jwt}`
@@ -174,7 +178,7 @@ function EmployerDashboard() {
       console.error('Erreur lors de la mise à jour du profil:', error);
       message.error('Erreur lors de la mise à jour du profil');
     }
-  };
+  }, [cookies.jwt, setUser, message, setIsEditModalVisible]);
 
   const handlePostJob = () => {
     setIsPostJobModalVisible(true);
@@ -305,70 +309,231 @@ function EmployerDashboard() {
               <p><strong>Localisation:</strong> {offer.address}, {offer.country}</p>
               <p><strong>Compétences:</strong> {offer.skills.map(skill => <Tag key={skill}>{skill}</Tag>)}</p>
               <p><strong>Niveau d'expérience:</strong> {offer.experienceLevel}</p>
+              <Button
+  type="link"
+  onClick={() => navigate(`/employer/offers/${offer._id}/candidates`)}
+>
+  Voir les candidats
+</Button>
             </Card>
+            
           </Col>
         ))}
       </Row>
     );
   };
 
+
+
+  
   const renderContent = () => {
     switch (selectedMenuItem) {
       case 'dashboard':
       case '1':
+        // Sample data for charts
+        const applicationsData = [
+          { month: 'Jan', applications: 35 },
+          { month: 'Feb', applications: 42 },
+          { month: 'Mar', applications: 28 },
+          { month: 'Apr', applications: 45 },
+          { month: 'May', applications: 38 },
+          { month: 'Jun', applications: 50 },
+        ];
+
+        const jobStatusData = [
+          { name: 'Active', value: 8 },
+          { name: 'Closed', value: 3 },
+          { name: 'Draft', value: 2 },
+        ];
+
+        const candidateSourcesData = [
+          { name: 'Direct', value: 40 },
+          { name: 'LinkedIn', value: 30 },
+          { name: 'Indeed', value: 20 },
+          { name: 'Other', value: 10 },
+        ];
+
+        const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
         return (
-          <Row gutter={[24, 24]}>
-            <Col xs={24} md={12} lg={8}>
-              <Card title="Aperçu du Profil" bordered={false} className="dashboard-card">
-                <p><strong>Email:</strong> {user?.email}</p>
-                <p><strong>Nom de l'entreprise:</strong> {user?.companyName}</p>
-                <p><strong>Site web:</strong> {user?.website || 'N/A'}</p>
-                <p><strong>Téléphone:</strong> {user?.phone}</p>
-                <p><strong>Localisation:</strong> {user?.location}</p>
-                <p><strong>Description:</strong> {user?.description || 'N/A'}</p>
-              </Card>
-            </Col>
-            <Col xs={24} md={12} lg={8}>
-              <Card title="Statistiques des Offres" bordered={false} className="dashboard-card">
-                <Statistic title="Total Offres" value={jobOffers.length} prefix={<LaptopOutlined />} />
-                <Divider />
-                <Statistic title="Candidatures Reçues" value={120} prefix={<TeamOutlined />} />
-                <Divider />
-                <Statistic title="Offres Actives" value={jobOffers.filter(job => job.status === 'active').length} prefix={<CheckCircleOutlined />} />
-              </Card>
-            </Col>
-            <Col xs={24} md={12} lg={8}>
-              <Card title="Activités Récentes" bordered={false} className="dashboard-card">
-                <Timeline>
-                  <Timeline.Item color="green">Nouvelle offre publiée (Développeur Web) - 2 jours</Timeline.Item>
-                  <Timeline.Item color="blue">2 nouvelles candidatures pour Design UX - 3 jours</Timeline.Item>
-                  <Timeline.Item color="red">Offre (Chef de Projet) expirée - 1 semaine</Timeline.Item>
-                  <Timeline.Item>Profil mis à jour - 2 semaines</Timeline.Item>
-                </Timeline>
-              </Card>
-            </Col>
-          </Row>
+          <div className="dashboard-content">
+            <Row gutter={[24, 24]}>
+              <Col xs={24} md={12} lg={8}>
+                <Card title="Aperçu du Profil" bordered={false} className="dashboard-card">
+                  <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                    <div className="profile-header">
+                      <Avatar size={64} icon={<BankOutlined />} />
+                      <div className="profile-info">
+                        <Title level={4}>{user?.companyName}</Title>
+                        <Text type="secondary">{user?.email}</Text>
+                      </div>
+                    </div>
+                    <div className="profile-details">
+                      <p><GlobalOutlined /> {user?.website || 'N/A'}</p>
+                      <p><PhoneOutlined /> {user?.phone}</p>
+                      <p><EnvironmentOutlined /> {user?.location}</p>
+                    </div>
+                  </Space>
+                </Card>
+              </Col>
+              <Col xs={24} md={12} lg={8}>
+                <Card title="Statistiques des Offres" bordered={false} className="dashboard-card">
+                  <Row gutter={[16, 16]}>
+                    <Col span={12}>
+                      <Statistic 
+                        title="Total Offres" 
+                        value={jobOffers.length} 
+                        prefix={<LaptopOutlined />} 
+                        valueStyle={{ color: '#1890ff' }}
+                      />
+                    </Col>
+                    <Col span={12}>
+                      <Statistic 
+                        title="Candidatures" 
+                        value={120} 
+                        prefix={<TeamOutlined />}
+                        valueStyle={{ color: '#52c41a' }}
+                      />
+                    </Col>
+                    <Col span={12}>
+                      <Statistic 
+                        title="Offres Actives" 
+                        value={jobOffers.filter(job => job.status === 'active').length} 
+                        prefix={<CheckCircleOutlined />}
+                        valueStyle={{ color: '#722ed1' }}
+                      />
+                    </Col>
+                    <Col span={12}>
+                      <Statistic 
+                        title="Vues Totales" 
+                        value={1500} 
+                        prefix={<EyeOutlined />}
+                        valueStyle={{ color: '#fa8c16' }}
+                      />
+                    </Col>
+                  </Row>
+                </Card>
+              </Col>
+              <Col xs={24} md={12} lg={8}>
+                <Card title="Statut des Offres" bordered={false} className="dashboard-card">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={jobStatusData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {jobStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Card>
+              </Col>
+              <Col xs={24} lg={12}>
+                <Card title="Candidatures par Mois" bordered={false} className="dashboard-card">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart data={applicationsData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Area 
+                        type="monotone" 
+                        dataKey="applications" 
+                        stroke="#1890ff" 
+                        fill="#1890ff" 
+                        fillOpacity={0.3} 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Card>
+              </Col>
+              <Col xs={24} lg={12}>
+                <Card title="Sources des Candidats" bordered={false} className="dashboard-card">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={candidateSourcesData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#1890ff" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Card>
+              </Col>
+            </Row>
+          </div>
         );
       case '2':
         return (
           <div className="my-jobs-section">
-            <Title level={3}>Mes Offres d'Emploi</Title>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handlePostJob} style={{ marginBottom: 20 }}>
-              Publier une nouvelle offre
-            </Button>
+            <div className="section-header">
+              <Title level={3}>Mes Offres d'Emploi</Title>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />} 
+                onClick={handlePostJob}
+                size="large"
+              >
+                Publier une nouvelle offre
+              </Button>
+            </div>
             {renderJobOffers()}
           </div>
         );
       case '3':
-        return <Title level={3}>Messages</Title>;
+        return (
+          <div className="messages-section">
+            <Title level={3}>Messages</Title>
+            <Card bordered={false}>
+              <Empty description="Aucun message pour le moment" />
+            </Card>
+          </div>
+        );
       case '4':
-        return <Title level={3}>Soumettre une offre</Title>;
+        return (
+          <div className="post-job-section">
+            <Title level={3}>Publier une Offre d'Emploi</Title>
+            <Card bordered={false}>
+              <PostJobForm onJobPosted={handleJobPosted} employerId={user?._id} />
+            </Card>
+          </div>
+        );
       case '5':
-        return <Title level={3}>Candidats Sauvegardés</Title>;
+        return (
+          <div className="saved-candidates-section">
+            <Title level={3}>Candidats Sauvegardés</Title>
+            <Card bordered={false}>
+              <Empty description="Aucun candidat sauvegardé" />
+            </Card>
+          </div>
+        );
       case '6':
-        return <Title level={3}>Abonnement & Facturation</Title>;
+        return (
+          <div className="subscription-section">
+            <Title level={3}>Abonnement & Facturation</Title>
+            <Card bordered={false}>
+              <Empty description="Aucun abonnement actif" />
+            </Card>
+          </div>
+        );
       case '7':
-        return <Title level={3}>Notifications</Title>;
+        return (
+          <div className="notifications-section">
+            <Title level={3}>Notifications</Title>
+            <Card bordered={false}>
+              <Empty description="Aucune notification" />
+            </Card>
+          </div>
+        );
       default:
         return <Title level={3}>Bienvenue sur votre tableau de bord !</Title>;
     }
@@ -403,9 +568,24 @@ function EmployerDashboard() {
           }
         }}
         className="dashboard-sider"
+        width={200}
       >
         {renderSidebar()}
       </Sider>
+      <Layout className={`site-layout ${collapsed ? 'collapsed' : ''}`}>
+        <div className={`dashboard-header-placeholder ${collapsed ? 'collapsed' : ''}`} />
+        <Content style={{ 
+          margin: '24px 16px', 
+          padding: 24, 
+          minHeight: 280, 
+          background: antdToken.colorBgContainer, 
+          borderRadius: antdToken.borderRadiusLG,
+          overflow: 'auto'
+        }}>
+          {renderContent()}
+        </Content>
+      </Layout>
+
       <Drawer
         placement="left"
         closable={false}
@@ -423,12 +603,6 @@ function EmployerDashboard() {
         />
         {renderSidebar()}
       </Drawer>
-      <Layout className="site-layout">
-        <div className="dashboard-header-placeholder" />
-        <Content style={{ margin: '24px 16px', padding: 24, minHeight: 280, background: antdToken.colorBgContainer, borderRadius: antdToken.borderRadiusLG }}>
-          {renderContent()}
-        </Content>
-      </Layout>
 
       <Modal
         title="Publier une nouvelle offre d'emploi"
@@ -436,6 +610,7 @@ function EmployerDashboard() {
         onCancel={() => setIsPostJobModalVisible(false)}
         footer={null}
         width={800}
+        className="post-job-modal"
       >
         <PostJobForm onJobPosted={handleJobPosted} employerId={user?._id} />
       </Modal>
@@ -446,8 +621,11 @@ function EmployerDashboard() {
         onCancel={() => setIsEditModalVisible(false)}
         footer={null}
         width={800}
+        className="edit-profile-modal"
       >
-        <EmployerProfileForm initialData={user} onUpdateProfile={handleUpdateProfile} />
+        {user && (
+          <EmployerProfileForm initialData={user} onSubmit={handleUpdateProfile} onCancel={() => setIsEditModalVisible(false)} />
+        )}
       </Modal>
     </Layout>
   );
