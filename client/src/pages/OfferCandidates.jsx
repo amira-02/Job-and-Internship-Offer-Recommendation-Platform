@@ -47,6 +47,7 @@ const OfferCandidates = () => {
   const handleDecision = async (offerId, candidate, decision) => {
   try {
     const response = await axios.post(`http://localhost:3000/api/joboffers/${offerId}/decision`, {
+        userId: candidate._id,
       decision, // 'accepted' ou 'rejected'
       email: candidate.email,
       firstName: candidate.firstName,

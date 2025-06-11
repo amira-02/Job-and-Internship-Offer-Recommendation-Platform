@@ -301,25 +301,61 @@ exports.getOfferCandidates = async (req, res) => {
 };
 
 
-
 exports.handleCandidateDecision = async (req, res) => {
-  const { id } = req.params; // ID de la candidature
-  const { decision, email, firstName,offerTitle } = req.body; // 'accepted' ou 'rejected'
+  const { id } = req.params; // offerId
+  const { decision, userId, email, firstName } = req.body;
+   console.log("Reçu dans le corps de la requête :", req.body);
 
+  if (!['accepted', 'rejected'].includes(decision)) {
+    return res.status(400).json({ message: "Décision invalide" });
+  }
+      
+
+  if (!userId || !email || !firstName) {
+    return res.status(400).json({ message: "Données incomplètes pour traiter la décision." });
+  }
+  
   try {
-    if (decision === 'accepted') {
-      await sendAcceptanceEmail(email, firstName, offerTitle);
-    } else if (decision === 'rejected') {
-      await sendRejectionEmail(email,firstName, offerTitle);
-    } else {
-      return res.status(400).json({ message: "Décision invalide" });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+
+    if (!user.appliedOffers || !Array.isArray(user.appliedOffers)) {
+      return res.status(400).json({ message: "Aucune candidature trouvée pour cet utilisateur." });
+    }
+console.log("Liste des candidatures de l'utilisateur :", user.appliedOffers);
+
+    // Trouver l'offre correspondante
+const application = user.appliedOffers.find(app => app._id.toString() === id);
+
+
+    if (!application) {
+      return res.status(404).json({ message: "Candidature non trouvée" });
     }
 
-    // Ici tu peux aussi mettre à jour le statut de la candidature en DB si tu veux
+    // Ajouter ou mettre à jour le statut
+    application.status = decision;
 
-    res.status(200).json({ message: `Email de ${decision} envoyé.` });
+    await user.save();
+
+    try {
+      // Optionnel : Récupérer les infos de l'offre si tu veux les inclure dans l'email
+      const offer = await JobOffer.findById(id);
+      const offerTitle = offer?.title || "your job offer";
+
+      if (decision === 'accepted') {
+        await sendAcceptanceEmail(email, firstName, offerTitle);
+      } else {
+        await sendRejectionEmail(email, firstName, offerTitle);
+      }
+    } catch (emailError) {
+      console.error("Erreur lors de l'envoi de l'email :", emailError);
+      return res.status(500).json({ message: "Statut mis à jour, mais erreur lors de l'envoi de l'email." });
+    }
+
+    res.status(200).json({ message: `Statut '${decision}' mis à jour et email envoyé.` });
+
   } catch (error) {
-    console.error("Erreur lors de l'envoi de l'email :", error);
+    console.error("Erreur lors du traitement :", error);
     res.status(500).json({ message: "Erreur lors du traitement de la décision." });
   }
 };

@@ -1,14 +1,14 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
-const appliedOfferSchema = new mongoose.Schema({
-  offerId: { type: mongoose.Schema.Types.ObjectId, ref: "JobOffer", required: true },
-  status: {
-    type: String,
-    enum: ["pending", "accepted", "rejected"],
-    default: "pending",
-  },
-});
+// const appliedOfferSchema = new mongoose.Schema({
+//   offerId: { type: mongoose.Schema.Types.ObjectId, ref: "JobOffer", required: true },
+//   status: {
+//     type: String,
+//     enum: ["pending", "accepted", "rejected"],
+//     default: "pending",
+//   },
+// });
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -90,7 +90,13 @@ const userSchema = new mongoose.Schema({
       uploadedAt: { type: Date, default: Date.now },
     },
   ],
-  appliedOffers: [appliedOfferSchema],  // <-- MODIFIE ICI
+ appliedOffers: [
+  {
+    offerId: { type: mongoose.Schema.Types.ObjectId, ref: "JobOffer" },
+    status: { type: String, default: "pending" }
+  }
+]
+ // <-- MODIFIE ICI
 });
 
 userSchema.pre("save", async function (next) {
