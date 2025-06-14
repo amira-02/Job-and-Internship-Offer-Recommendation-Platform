@@ -359,3 +359,37 @@ const application = user.appliedOffers.find(app => app._id.toString() === id);
     res.status(500).json({ message: "Erreur lors du traitement de la décision." });
   }
 };
+
+exports.getUserAppliedOffers = async (req, res) => {
+  try {
+    console.log("✅ Utilisateur connecté dans controller :", req.user);
+
+    // Récupère l'utilisateur
+    const user = await User.findById(req.user.id);
+    if (!user || !user.appliedOffers || user.appliedOffers.length === 0) {
+      return res.status(404).json({ message: "Aucune candidature trouvée" });
+    }
+
+    // Récupère chaque offre par _id (car offerId n'existe pas dans ta base actuelle)
+    const offers = await Promise.all(
+      user.appliedOffers.map(async (app) => {
+        const offer = await JobOffer.findById(app._id);
+        if (!offer) return null;
+        return {
+          _id: offer._id,
+          title: offer.jobTitle || offer.title || "Titre inconnu",
+          company: offer.company || "Entreprise inconnue",
+          status: app.status || "pending"
+        };
+      })
+    );
+
+    // Supprime les nulls
+    const filteredOffers = offers.filter(o => o !== null);
+
+    res.status(200).json(filteredOffers);
+  } catch (error) {
+    console.error("❌ Erreur lors de la récupération des candidatures:", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};

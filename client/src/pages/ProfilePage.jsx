@@ -66,8 +66,15 @@ import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleOutline from "@mui/icons-material/CheckCircleOutline";
+import HourglassEmpty from "@mui/icons-material/HourglassEmpty";
+import Cancel from "@mui/icons-material/Cancel";
+import HelpOutline from "@mui/icons-material/HelpOutline";
+
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import { motion, AnimatePresence } from 'framer-motion';
+
+
 
 const ProfilePage = () => {
   const [userData, setUserData] = useState(null);
@@ -120,33 +127,58 @@ const ProfilePage = () => {
     { value: 'C2', label: 'C2 - Maîtrise' }
   ];
 
-  // Utilisation de useCallback pour mémoïser la fonction et éviter sa recréation inutile
-  const fetchUserData = useCallback(async () => {
-    if (!cookies.jwt) {
-      // Si pas de JWT, pas besoin de faire l'appel API
-      return null; 
+const fetchUserData = useCallback(async () => {
+  if (!cookies.jwt) return null;
+
+  try {
+    const response = await axios.get('http://localhost:3000/api/auth/profile', {
+      headers: { Authorization: `Bearer ${cookies.jwt}` },
+      withCredentials: true
+    });
+
+    const user = response.data;
+
+    // Si l'utilisateur a des offres postulées
+    if (Array.isArray(user.appliedOffers) && user.appliedOffers.length > 0) {
+      // Récupérer les détails des offres une par une
+      const detailedOffers = await Promise.all(
+        user.appliedOffers.map(async (appliedOffer) => {
+          try {
+            const jobOfferResponse = await axios.get(`http://localhost:3000/api/joboffers/${appliedOffer._id}`, {
+              headers: { Authorization: `Bearer ${cookies.jwt}` },
+              withCredentials: true
+            });
+            return {
+              ...jobOfferResponse.data,
+              status: appliedOffer.status,
+              offerId: appliedOffer._id
+            };
+          } catch (error) {
+            console.error(`Erreur lors de la récupération de l'offre ${appliedOffer._id}`, error);
+            return null;
+          }
+        })
+      );
+
+      // Filtrer les offres nulles (échec de récupération)
+      user.appliedOffers = detailedOffers.filter(Boolean);
     }
 
-    try {
-      const response = await axios.get('http://localhost:3000/api/auth/profile', {
-        headers: {
-          Authorization: `Bearer ${cookies.jwt}`
-        },
-        withCredentials: true
-      });
-      return response.data;
-    } catch (err) {
-      console.error('Erreur lors de la récupération des données utilisateur (fetchUserData):', err);
-      if (err.response && err.response.status === 401) {
-        // Le token est invalide, nous le supprimerons dans le useEffect principal
-        throw new Error('Unauthorized'); // Propager l'erreur pour que le useEffect la gère
-      }
-      throw err; // Propager d'autres erreurs
-    }
-  }, [cookies.jwt]); // Dépend de cookies.jwt
+    return user;
+  } catch (err) {
+    console.error('Erreur lors de la récupération des données utilisateur (fetchUserData):', err);
+    if (err.response?.status === 401) throw new Error('Unauthorized');
+    throw err;
+  }
+}, [cookies.jwt]);
 
+
+
+
+  // Chargement des données utilisateur à l'initialisation
 useEffect(() => {
   let isMounted = true;
+
   const loadProfile = async () => {
     setLoading(true);
     setError(null);
@@ -154,9 +186,7 @@ useEffect(() => {
     if (!cookies.jwt) {
       if (isMounted) {
         setUserData(null);
-        if (window.location.pathname !== '/login') {
-          navigate('/login');
-        }
+        navigate('/login');
       }
       setLoading(false);
       return;
@@ -165,26 +195,25 @@ useEffect(() => {
     try {
       const data = await fetchUserData();
       if (isMounted) {
-        // Correction ici :
-        setUserData({
-          ...data,
-          cv: Array.isArray(data.cv) ? data.cv : data.cv ? [data.cv] : []
-        });
+        setUserData(data);
       }
     } catch (err) {
-      // ... gestion d'erreur ...
+      if (err.message === 'Unauthorized') {
+        removeCookie('jwt');
+        navigate('/login');
+      } else {
+        setError("Erreur lors du chargement du profil");
+      }
     } finally {
       if (isMounted) setLoading(false);
     }
   };
 
   loadProfile();
-  return () => { isMounted = false; };
-}, [cookies.jwt, navigate, removeCookie, fetchUserData]);
+  return () => { isMounted = false; }
+}, [cookies.jwt, fetchUserData, navigate, removeCookie]);
 
-
-
-
+  // Calcul du taux de complétion du profil
   useEffect(() => {
     if (userData) {
       const fields = [
@@ -192,19 +221,19 @@ useEffect(() => {
         userData.lastName,
         userData.email,
         userData.governorate,
-        userData.mobileNumber,
-        userData.diplomaSpecialty,
-        userData.university,
-        userData.yearsOfExperience,
-        userData.employmentTypes?.length > 0,
-        userData.selectedDomains?.length > 0,
-        userData.cv
+        // userData.mobileNumber,
+        // userData.diplomaSpecialty,
+        // userData.university,
+        // userData.yearsOfExperience,
+        // userData.employmentTypes?.length > 0,
+        // userData.selectedDomains?.length > 0,
+        userData.cv && userData.cv.length > 0
       ];
+
       const completedFields = fields.filter(Boolean).length;
       setProfileCompletion((completedFields / fields.length) * 100);
     }
   }, [userData]);
-
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -663,6 +692,42 @@ useEffect(() => {
     setCvAnalysis(null);
   };
 
+ const [offers, setOffers] = useState([]);
+  const [filter, setFilter] = useState("all");
+
+  useEffect(() => {
+    const fetchAppliedOffers = async () => {
+      try {
+        const res = await axios.get('http://localhost:3000/api/joboffers/user/applied', {
+          withCredentials: true,
+        });
+        setOffers(res.data);
+      } catch (err) {
+        console.error("Erreur lors du chargement des offres :", err);
+      }
+    };
+
+    fetchAppliedOffers();
+  }, []);
+
+  const statuses = ["all", "accepted", "pending", "rejected"];
+
+  const getStatusIcon = (status) => {
+    switch (status.toLowerCase()) {
+      case "accepted":
+        return <CheckCircleOutline color="success" />;
+      case "pending":
+        return <HourglassEmpty color="warning" />;
+      case "rejected":
+        return <Cancel color="error" />;
+      default:
+        return <HelpOutline color="disabled" />;
+    }
+  };
+
+  const filteredOffers = filter === "all"
+    ? offers
+    : offers.filter((offer) => offer.status.toLowerCase() === filter);
   if (loading) {
     return (
       <Box sx={{ 
@@ -976,7 +1041,7 @@ useEffect(() => {
                 </Paper>
 
                 {/* Experience Summary */}
-                <Paper
+                {/* <Paper
                   elevation={0}
                   sx={{
                     p: 3,
@@ -1001,8 +1066,145 @@ useEffect(() => {
                   <Typography variant="body1" sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}>
                     {userData?.yearsOfExperience ? `${userData.yearsOfExperience} an(s)` : 'Non spécifié'}
                   </Typography>
-                </Paper>
+                </Paper> */}
+             {/* CV Section */}
+    <Paper
+  elevation={0}
+  sx={{
+    p: 3,
+    borderRadius: 4,
+    bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
+    border: '1px solid',
+    borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
+    transition: 'all 0.3s ease'
+  }}
+>
+  <Stack spacing={2}>
+    <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+      <Stack direction="row" spacing={2} alignItems="center">
+        <Typography variant="h6" sx={{ fontWeight: 600, color: darkMode ? '#fff' : '#1a1a1a' }}>
+          CVs
+        </Typography>
+      </Stack>
 
+      {Array.isArray(userData?.cv) && userData.cv.length > 0 && (
+        <IconButton 
+          onClick={handleCvMenuOpen}
+          sx={{ 
+            color: darkMode ? alpha('#fff', 0.7) : alpha('#000', 0.5),
+            '&:hover': { color: '#1976d2' }
+          }}
+        >
+          <MoreVertIcon />
+        </IconButton>
+      )}
+    </Stack>
+
+    {Array.isArray(userData?.cv) && userData.cv.length > 0 ? (
+      <Stack spacing={1}>
+        {userData.cv.map((cvFile, idx) => (
+          <Stack key={idx} direction="row" spacing={1} alignItems="center">
+            <Typography variant="body2">{cvFile.fileName || `CV n°${idx + 1}`}</Typography>
+
+            <IconButton
+              onClick={() =>
+                window.open(`http://localhost:3000/api/auth/cv/${userData._id}/${idx}`, '_blank')
+              }
+              sx={{
+                color: '#1976d2',
+                bgcolor: alpha('#1976d2', 0.1),
+                '&:hover': { bgcolor: alpha('#1976d2', 0.2) }
+              }}
+            >
+              <DownloadIcon />
+            </IconButton>
+<IconButton
+  onClick={async () => {
+    if (window.confirm('Supprimer ce CV ?')) {
+      setLoading(true);
+      try {
+        await axios.delete(`http://localhost:3000/api/auth/cv/${userData._id}/${idx}`, {
+          headers: { 'Authorization': `Bearer ${cookies.jwt}` },
+          withCredentials: true
+        });
+
+        // Mettre à jour le state après suppression
+        const updatedData = await fetchUserData();
+        setUserData({
+          ...updatedData,
+          cv: Array.isArray(updatedData.cv) ? updatedData.cv : updatedData.cv ? [updatedData.cv] : []
+        });
+
+      } catch (err) {
+        console.error(err);
+        setError('Erreur lors de la suppression du CV');
+      } finally {
+        setLoading(false);
+      }
+    }
+  }}
+  sx={{
+    color: '#d32f2f',
+    bgcolor: alpha('#d32f2f', 0.1),
+    '&:hover': { bgcolor: alpha('#d32f2f', 0.2) }
+  }}
+>
+  <DeleteIcon />
+</IconButton>
+
+          </Stack>
+        ))}
+
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={() => cvFileInputRef.current?.click()}
+          sx={{
+            borderColor: '#1976d2',
+            color: '#1976d2',
+            '&:hover': {
+              borderColor: '#1976d2',
+              bgcolor: alpha('#1976d2', 0.1)
+            }
+          }}
+        >
+          Ajouter un CV
+        </Button>
+      </Stack>
+    ) : (
+      <Stack spacing={2}>
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={() => cvFileInputRef.current?.click()}
+          sx={{
+            borderColor: '#1976d2',
+            color: '#1976d2',
+            '&:hover': {
+              borderColor: '#1976d2',
+              bgcolor: alpha('#1976d2', 0.1)
+            }
+          }}
+        >
+          Ajouter un CV
+        </Button>
+        <Typography variant="caption" sx={{ color: darkMode ? alpha('#fff', 0.7) : alpha('#000', 0.6) }}>
+          Formats acceptés : PDF, DOC, DOCX (max 5MB)
+        </Typography>
+      </Stack>
+    )}
+  </Stack>
+</Paper>
+
+
+      {/* Input caché pour l'upload de CV */}
+      <input
+        type="file"
+        ref={cvFileInputRef}
+        onChange={handleCvFileChange}
+        accept=".pdf,.doc,.docx"
+        style={{ display: 'none' }}
+      />
                 {/* Social Links */}
                 <Paper
                   elevation={0}
@@ -1076,138 +1278,19 @@ useEffect(() => {
                   </Stack>
                 </Paper>
 
-                {/* CV Section */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    borderRadius: 4,
-                    bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
-                    border: '1px solid',
-                    borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  <Stack spacing={2}>
-                    <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Box sx={{
-                          p: 1.5,
-                          borderRadius: 2,
-                          bgcolor: alpha('#1976d2', 0.1),
-                          transition: 'all 0.3s ease',
-                          '&:hover': { bgcolor: alpha('#1976d2', 0.2) }
-                        }}>
-                          <DownloadIcon sx={{ color: '#1976d2' }} />
-                        </Box>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: darkMode ? '#fff' : '#1a1a1a' }}>
-                          CV
-                        </Typography>
-                      </Stack>
-                      {userData?.cv && userData.cv.length > 0 && (
-                        <IconButton 
-                          onClick={handleCvMenuOpen}
-                          sx={{ 
-                            color: darkMode ? alpha('#fff', 0.7) : alpha('#000', 0.5),
-                            '&:hover': { color: '#1976d2' }
-                          }}
-                        >
-                          <MoreVertIcon />
-                        </IconButton>
-                      )}
-                    </Stack>
-                    <Divider sx={{ borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08) }} />
-                    
-                    {userData?.cv && userData.cv.length > 0 ? (
-                      <Stack spacing={1}>
-                        {userData.cv.map((cvFile, idx) => (
-                          <Stack key={idx} direction="row" spacing={1} alignItems="center">
-                            <Typography variant="body2">{cvFile.fileName}</Typography>
-                            <IconButton
-                              onClick={() => window.open(`http://localhost:3000/api/auth/cv/${userData._id}/${idx}`, '_blank')}
-                              sx={{
-                                color: '#1976d2',
-                                bgcolor: alpha('#1976d2', 0.1),
-                                '&:hover': { bgcolor: alpha('#1976d2', 0.2) }
-                              }}
-                            >
-                              <DownloadIcon />
-                            </IconButton>
-                            <IconButton
-                              onClick={async () => {
-                                if (window.confirm('Supprimer ce CV ?')) {
-                                  setLoading(true);
-                                  try {
-                                    await axios.delete(`http://localhost:3000/api/auth/cv/${userData._id}/${idx}`, {
-                                      headers: { 'Authorization': `Bearer ${cookies.jwt}` },
-                                      withCredentials: true
-                                    });
-                                    await fetchUserData();
-                                  } catch (err) {
-                                    setError('Erreur lors de la suppression du CV');
-                                  } finally {
-                                    setLoading(false);
-                                  }
-                                }
-                              }}
-                              sx={{ color: '#d32f2f', bgcolor: alpha('#d32f2f', 0.1), '&:hover': { bgcolor: alpha('#d32f2f', 0.2) } }}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Stack>
-                        ))}
-                        <Button
-                          variant="outlined"
-                          startIcon={<AddIcon />}
-                          onClick={() => cvFileInputRef.current?.click()}
-                          sx={{
-                            borderColor: '#1976d2',
-                            color: '#1976d2',
-                            '&:hover': {
-                              borderColor: '#1976d2',
-                              bgcolor: alpha('#1976d2', 0.1)
-                            }
-                          }}
-                        >
-                          Ajouter un CV
-                        </Button>
-                      </Stack>
-                    ) : (
-                      <Stack spacing={2}>
-                        <Button
-                          variant="outlined"
-                          startIcon={<AddIcon />}
-                          onClick={() => cvFileInputRef.current?.click()}
-                          sx={{
-                            borderColor: '#1976d2',
-                            color: '#1976d2',
-                            '&:hover': {
-                              borderColor: '#1976d2',
-                              bgcolor: alpha('#1976d2', 0.1)
-                            }
-                          }}
-                        >
-                          Ajouter un CV
-                        </Button>
-                        <Typography variant="caption" sx={{ color: darkMode ? alpha('#fff', 0.7) : alpha('#000', 0.6) }}>
-                          Formats acceptés : PDF, DOC, DOCX (max 5MB)
-                        </Typography>
-                      </Stack>
-                    )}
-                  </Stack>
-                </Paper>
+                
 
                 {/* Input caché pour l'upload de CV */}
-                <input
+                {/* <input
                   type="file"
                   ref={cvFileInputRef}
                   onChange={handleCvFileChange}
                   accept=".pdf,.doc,.docx"
                   style={{ display: 'none' }}
-                />
+                /> */}
 
                 {/* Menu pour les actions du CV - uniquement visible si un CV existe */}
-                {userData?.cv && userData.cv.length > 0 && (
+                {/* {userData?.cv && userData.cv.length > 0 && (
                   <Menu
                     anchorEl={cvMenuAnchor}
                     open={Boolean(cvMenuAnchor)}
@@ -1249,7 +1332,7 @@ useEffect(() => {
                       Ajouter un CV
                     </MenuItem>
                   </Menu>
-                )}
+                )} */}
 
                 {/* Contact Information */}
                 <Paper
@@ -1331,9 +1414,58 @@ useEffect(() => {
             <Grid item xs={12} md={9}>
               <Stack spacing={4}>
              
+<Paper elevation={3} style={{ padding: 20, marginTop: 20 }}>
+  <Typography variant="h5" gutterBottom>
+    Mes Candidatures
+  </Typography>
+
+  <Stack direction="row" spacing={1} marginBottom={2}>
+    {["all", "accepted", "pending", "rejected"].map((status) => (
+      <Button
+        key={status}
+        variant={filter === status ? "contained" : "outlined"}
+        color={
+          status === "accepted"
+            ? "success"
+            : status === "pending"
+            ? "warning"
+            : status === "rejected"
+            ? "error"
+            : "primary"
+        }
+        onClick={() => setFilter(status)}
+      >
+        {status === "all" ? "Tous" : status.charAt(0).toUpperCase() + status.slice(1)}
+      </Button>
+    ))}
+  </Stack>
+
+  {filteredOffers.length > 0 ? (
+    <List>
+      {filteredOffers.map((offer) => (
+        <ListItem key={offer._id} divider>
+          {getStatusIcon(offer.status)}
+          <ListItemText
+            primary={offer.title}
+            secondary={`Statut : ${
+              offer.status.charAt(0).toUpperCase() + offer.status.slice(1)
+            }`}
+            style={{ marginLeft: 10 }}
+          />
+        </ListItem>
+      ))}
+    </List>
+  ) : (
+    <Typography variant="body1">
+      Aucune candidature trouvée pour ce statut.
+    </Typography>
+  )}
+</Paper>
+
+ 
 
                 {/* Education */}
-                <Paper
+                {/* <Paper
                   elevation={0}
                   sx={{
                     p: 4,
@@ -1350,7 +1482,7 @@ useEffect(() => {
                     </Typography>
                     <Tooltip title="Ajouter une formation">
                       <motion.dev whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                        {/* <IconButton 
+                        <IconButton 
                           sx={{ 
                             color: '#1976d2',
                             bgcolor: alpha('#1976d2', 0.1),
@@ -1358,7 +1490,7 @@ useEffect(() => {
                           }}
                         >
                           <AddIcon />
-                        </IconButton> */}
+                        </IconButton>
                       </motion.dev>
                     </Tooltip>
                   </Stack>
@@ -1392,14 +1524,14 @@ useEffect(() => {
                       </Typography>
                     </Box>
                   </Stack>
-                </Paper>
+                </Paper> */}
 
                 {/* TODO: Add Types d'emploi recherchés / Domaines d'intérêt (as per image, maybe small cards) */}
 
            
                 
                  {/* Section Langues */}
-                  <Paper
+                  {/* <Paper
                     elevation={0}
                     sx={{
                       p: 3,
@@ -1490,10 +1622,10 @@ useEffect(() => {
                           </Typography>
                         </Box>
                       )}
-                  </Paper>
+                  </Paper> */}
 
                  {/* Section Certifications */}
-                  <Paper
+                  {/* <Paper
                     elevation={0}
                     sx={{
                       p: 3,
@@ -1574,7 +1706,7 @@ useEffect(() => {
                           </Typography>
                         </Box>
                       )}
-                  </Paper>
+                  </Paper> */}
 
                
               </Stack>

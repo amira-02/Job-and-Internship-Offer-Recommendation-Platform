@@ -13,7 +13,7 @@ router.get('/search', jobOfferController.searchJobOffers);
 // Routes protégées par l'authentification
 router.post('/', auth, jobOfferController.createJobOffer);
 router.get('/employer', auth, jobOfferController.getEmployerJobOffers);
-
+router.get('/user/applied', auth, jobOfferController.getUserAppliedOffers);
 // Routes avec paramètres
 router.get('/:id', jobOfferController.getJobOfferById);
 router.put('/:id', auth, jobOfferController.updateJobOffer);

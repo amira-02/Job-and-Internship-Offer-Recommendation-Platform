@@ -33,46 +33,44 @@ const checkUser = (req, res, next) => {
 
 // Middleware pour protéger les routes (utilisé pour l'API)
 const requireAuth = (req, res, next) => {
-  // console.log("Headers reçus:", req.headers); // Désactiver les logs excessifs
-  const token = req.cookies.jwt || req.headers.authorization?.split(' ')[1];
-  // console.log("Token extrait:", token); // Désactiver les logs excessifs
+  console.log("🔥 Middleware requireAuth appelé");
+  console.log("Headers:", req.headers);
+  console.log("Cookies:", req.cookies);
 
-  // check json web token exists & is verified
-  if (token) {
-    jwt.verify(token, 'kishan sheth super secret key', async (err, decodedToken) => {
-      if (err) {
-        console.error("Erreur de vérification du token:", err.message);
-        res.status(401).json({ message: 'Non autorisé', error: err.message });
-      } else {
-        console.log("Token décodé avec succès dans requireAuth:", decodedToken);
-        // Gérer le cas admin: ne pas chercher dans la base de données
-        if (decodedToken.id === "admin") {
-          req.user = { id: "admin", role: "admin", isAdmin: true };
-          console.log("Admin détecté. Attaching admin info.");
-          return next();
-        }
+  const token = req.cookies.jwt;
+  console.log("🍪 Token dans cookie:", token);
 
-        // Pour les utilisateurs normaux, chercher dans la base de données
-        try {
-          const user = await User.findById(decodedToken.id);
-          if (!user) {
-            console.error("Utilisateur non trouvé pour l'ID dans le token:", decodedToken.id);
-            return res.status(401).json({ message: 'Non autorisé, utilisateur introuvable' });
-          }
-          // Attacher l'utilisateur à la requête (ou les infos nécessaires)
-          req.user = { id: user._id, role: user.role, isAdmin: false }; // Attacher les infos de l'utilisateur réel
-          console.log("Utilisateur normal détecté. Attaching user info.", req.user);
-          next();
-        } catch (dbError) {
-          console.error("Erreur lors de la recherche utilisateur dans la base de données:", dbError);
-          res.status(500).json({ message: 'Erreur serveur lors de l\'authentification' });
-        }
-      }
-    });
-  } else {
-    console.log("Aucun token trouvé dans la requête");
-    res.status(401).json({ message: 'Non autorisé, token manquant' });
+  if (!token) {
+    console.log("❌ Aucun token dans le cookie !");
+    return res.status(401).json({ message: "Token manquant" });
   }
+
+  jwt.verify(token, 'kishan sheth super secret key', async (err, decodedToken) => {
+    if (err) {
+      console.error("❌ Erreur vérification token :", err.message);
+      return res.status(401).json({ message: "Token invalide ou expiré" });
+    }
+
+    console.log("✅ Token décodé :", decodedToken);
+
+    try {
+      const user = await User.findById(decodedToken.id);
+      if (!user) {
+        console.error("❌ Utilisateur introuvable pour ID :", decodedToken.id);
+        return res.status(401).json({ message: "Utilisateur introuvable" });
+      }
+
+      req.user = { id: user._id, role: user.role };
+      console.log("✅ Utilisateur attaché à la requête :", req.user);
+      next();
+    } catch (error) {
+      console.error("❌ Erreur base de données :", error);
+      return res.status(500).json({ message: "Erreur lors de l'authentification" });
+    }
+  });
 };
+
+
+
 
 module.exports = { requireAuth, checkUser }; 

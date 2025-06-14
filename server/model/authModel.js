@@ -96,7 +96,7 @@ const userSchema = new mongoose.Schema({
     status: { type: String, default: "pending" }
   }
 ]
- // <-- MODIFIE ICI
+
 });
 
 userSchema.pre("save", async function (next) {
