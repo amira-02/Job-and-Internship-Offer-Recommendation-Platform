@@ -258,46 +258,38 @@ module.exports.checkUser = async (req, res) => {
 module.exports.getUserCV = async (req, res) => {
   try {
     const userId = req.params.userId;
-    console.log('Fetching CV for user:', userId);
-    
-    const user = await User.findById(userId).select('+cv.data'); // Explicitly select cv.data
-    console.log('User found:', {
-      userId: user ? user._id : 'Not found',
-      hasCV: user && user.cv ? 'Yes' : 'No',
-      cvDetails: user && user.cv ? {
-        hasData: !!user.cv.data,
-        dataSize: user.cv.data ? user.cv.data.length : 0,
-        contentType: user.cv.contentType,
-        fileName: user.cv.fileName
-      } : 'No CV details'
-    });
-    
-    if (!user) {
-      console.log('User not found');
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    if (!user.cv || !user.cv.data) {
-      console.log('CV not found or no data:', {
-        hasCV: !!user.cv,
-        hasData: user.cv ? !!user.cv.data : false
-      });
-      return res.status(404).json({ message: 'CV not found' });
+    const fileName = req.query.fileName;
+
+    if (!fileName) {
+      return res.status(400).json({ message: 'Paramètre fileName manquant' });
     }
 
-    // Définir les headers pour le téléchargement du fichier
+    const user = await User.findById(userId).select('+cv');
+
+    if (!user || !user.cv || !Array.isArray(user.cv)) {
+      return res.status(404).json({ message: 'Utilisateur ou CV non trouvé' });
+    }
+
+    // Trouver le CV correspondant au fileName
+    const cvFile = user.cv.find(cv => cv.fileName === fileName);
+
+    if (!cvFile || !cvFile.data) {
+      return res.status(404).json({ message: 'CV introuvable' });
+    }
+
     res.set({
-      'Content-Type': user.cv.contentType || 'application/pdf',
-      'Content-Disposition': `attachment; filename="${user.cv.fileName || 'cv.pdf'}"`,
+      'Content-Type': cvFile.contentType || 'application/pdf',
+      'Content-Disposition': `attachment; filename="${cvFile.fileName}"`,
     });
 
-    // Envoyer le fichier
-    res.send(user.cv.data);
+    res.send(cvFile.data);
   } catch (err) {
     console.error('Error fetching CV:', err);
-    res.status(500).json({ message: 'Error fetching CV' });
+    res.status(500).json({ message: 'Erreur serveur lors de la récupération du CV' });
   }
 };
+
+
 
 module.exports.getUserProfile = async (req, res) => {
   try {
@@ -342,21 +334,27 @@ module.exports.getUserProfile = async (req, res) => {
       role: user.role,
       governorate: user.governorate,
       mobileNumber: user.mobileNumber,
-      otherPhone: user.otherPhone,
-      desiredJobTitle: user.desiredJobTitle,
-      employmentTypes: user.employmentTypes,
-      selectedDomains: user.selectedDomains,
-      yearsOfExperience: user.yearsOfExperience,
-      diplomaSpecialty: user.diplomaSpecialty,
-      university: user.university,
-      studyStartDate: user.studyStartDate,
-      studyEndDate: user.studyEndDate,
-      isCurrentlyStudying: user.isCurrentlyStudying,
+      // otherPhone: user.otherPhone,
+      // desiredJobTitle: user.desiredJobTitle,
+      // employmentTypes: user.employmentTypes,
+      // selectedDomains: user.selectedDomains,
+      // yearsOfExperience: user.yearsOfExperience,
+      // diplomaSpecialty: user.diplomaSpecialty,
+      // university: user.university,
+      // studyStartDate: user.studyStartDate,
+      // studyEndDate: user.studyEndDate,
+      // isCurrentlyStudying: user.isCurrentlyStudying,
       country: user.country,
       city: user.city,
       zipCode: user.zipCode,
       address: user.address,
-      cv: user.cv ? { fileName: user.cv.fileName } : null,
+          cv: user.cv?.map(f => ({
+            fileName: f.fileName,
+            contentType: f.contentType,
+            size: f.data?.length || 0
+          })) || [],
+
+
       languages: user.languages || [],
       certifications: user.certifications || [],
       profilePicture: profilePictureBase64

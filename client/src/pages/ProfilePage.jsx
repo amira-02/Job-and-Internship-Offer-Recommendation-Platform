@@ -70,6 +70,14 @@ import CheckCircleOutline from "@mui/icons-material/CheckCircleOutline";
 import HourglassEmpty from "@mui/icons-material/HourglassEmpty";
 import Cancel from "@mui/icons-material/Cancel";
 import HelpOutline from "@mui/icons-material/HelpOutline";
+import DescriptionIcon from "@mui/icons-material/Description";
+import InboxIcon from "@mui/icons-material/Inbox";
+import CloseIcon from '@mui/icons-material/Close';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+
+
+
+
 
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -135,7 +143,9 @@ const fetchUserData = useCallback(async () => {
       headers: { Authorization: `Bearer ${cookies.jwt}` },
       withCredentials: true
     });
-
+ console.log("User data complet :", response.data);
+    console.log("CV reçu depuis le backend :", response.data.user?.cv);
+    console.log("Contenu du premier CV :", response.data.user?.cv?.[0]);
     const user = response.data;
 
     // Si l'utilisateur a des offres postulées
@@ -168,7 +178,7 @@ const fetchUserData = useCallback(async () => {
   } catch (err) {
     console.error('Erreur lors de la récupération des données utilisateur (fetchUserData):', err);
     if (err.response?.status === 401) throw new Error('Unauthorized');
-    throw err;
+    throw err;  
   }
 }, [cookies.jwt]);
 
@@ -194,7 +204,16 @@ useEffect(() => {
 
     try {
       const data = await fetchUserData();
+
       if (isMounted) {
+        // ✅ Fix: s'assurer que cv est toujours un tableau
+        if (data.cv && !Array.isArray(data.cv)) {
+          data.cv = [data.cv];
+        }
+        if (!data.cv) {
+          data.cv = [];
+        }
+
         setUserData(data);
       }
     } catch (err) {
@@ -210,8 +229,14 @@ useEffect(() => {
   };
 
   loadProfile();
-  return () => { isMounted = false; }
+
+  return () => {
+    isMounted = false;
+  };
 }, [cookies.jwt, fetchUserData, navigate, removeCookie]);
+
+
+
 
   // Calcul du taux de complétion du profil
   useEffect(() => {
@@ -582,110 +607,139 @@ useEffect(() => {
     setCvMenuAnchor(null);
   };
 
-  const handleCvFileChange = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
-      setError('Le fichier doit être au format PDF ou Word');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Le fichier ne doit pas dépasser 5MB');
-      return;
-    }
-    const formData = new FormData();
-    formData.append('cv', file);
-    try {
-      setLoading(true);
+ const handleCvFileChange = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Vérification du type de fichier
+  if (
+    ![
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ].includes(file.type)
+  ) {
+    setError('Le fichier doit être au format PDF ou Word');
+    return;
+  }
+
+  // Vérification de la taille
+  if (file.size > 5 * 1024 * 1024) {
+    setError('Le fichier ne doit pas dépasser 5MB');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('cv', file);
+
+  try {
+    setLoading(true);
+    setError(null);
+
+    const response = await axios({
+      method: 'patch',
+      url: 'http://localhost:3000/api/auth/profile/cv',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${cookies.jwt}`
+      },
+      withCredentials: true
+    });
+    console.log("Contenu du premier CV :", response.data.cv?.[0]);
+console.log("CV reçu depuis le backend :", response.data.cv);
+
+    if (response.data.status) {
+      // ✅ Forcer cv à être un tableau
+      setUserData(prev => ({
+        ...prev,
+        cv: Array.isArray(response.data.cv)
+          ? response.data.cv
+          : response.data.cv
+          ? [response.data.cv]
+          : []
+      }));
+
+      await fetchUserData();
       setError(null);
-      const response = await axios({
-        method: 'patch',
-        url: 'http://localhost:3000/api/auth/profile/cv',
-        data: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${cookies.jwt}`
-        },
-        withCredentials: true
-      });
-      if (response.data.status) {
-        setUserData(prev => ({
-          ...prev,
-          cv: response.data.cv
-        }));
-        await fetchUserData();
-        setError(null);
-      } else {
-        throw new Error(response.data.message || 'Erreur lors de l\'upload du CV');
-      }
-    } catch (err) {
-      setError(
-        err.response?.data?.message || 
-        err.message || 
-        'Erreur lors de l\'upload du CV'
-      );
-    } finally {
-      setLoading(false);
-      handleCvMenuClose();
+    } else {
+      throw new Error(response.data.message || 'Erreur lors de l\'upload du CV');
     }
-  };
+  } catch (err) {
+    setError(
+      err.response?.data?.message ||
+      err.message ||
+      'Erreur lors de l\'upload du CV'
+    );
+  } finally {
+    setLoading(false);
+    handleCvMenuClose();
+  }
+};
 
-  const handleOpenCvAnalysis = async () => {
-    try {
-      console.log("Vérification du CV...", userData?.cv);
-    
-    if (!userData?.cv || userData.cv.length === 0) {
-        setError("Aucun CV n'a été téléchargé. Veuillez d'abord télécharger un CV.");
-        return;
+
+const handleOpenCvAnalysis = async (cvIndex = 0) => {
+    console.log('userData.cv:', userData.cv, 'cvIndex:', cvIndex);
+  try {
+    // Vérification que userData.cv est bien un tableau non vide
+    if (!userData?.cv || !Array.isArray(userData.cv) || userData.cv.length === 0) {
+      setError("Aucun CV n'a été téléchargé. Veuillez d'abord télécharger un CV.");
+      return;
     }
 
-            setLoading(true);
-      const formData = new FormData();
-            
-      // Récupérer le CV depuis le serveur
-      try {
-            const cvResponse = await axios.get(`http://localhost:3000/api/auth/cv/${userData._id}`, {
-                responseType: 'blob',
-          headers: {
-            'Authorization': `Bearer ${cookies.jwt}`
-          },
-          withCredentials: true
-            });
+    // Vérifier que l'index est valide
+    if (cvIndex < 0 || cvIndex >= userData.cv.length) {
+      setError(`CV introuvable à l'index ${cvIndex}.`);
+      return;
+    }
 
-        // Créer un fichier à partir du blob
-        const cvFile = new File([cvResponse.data], userData.cv[0].fileName, {
-          type: cvResponse.headers['content-type']
-        });
-        
-            formData.append('file', cvFile);
-      } catch (err) {
-        console.error("Erreur lors de la récupération du CV:", err);
-        setError("Erreur lors de la récupération du CV. Veuillez réessayer.");
-        return;
+    setLoading(true);
+
+    const cvMeta = userData.cv[cvIndex];
+
+    if (!cvMeta.fileName) {
+      setError(`Le CV à l'index ${cvIndex} ne contient pas de nom de fichier valide.`);
+      return;
+    }
+
+    // Requête GET pour récupérer le fichier CV (blob)
+    const cvResponse = await axios.get(
+      `http://localhost:3000/api/auth/cv/${userData._id}?fileName=${encodeURIComponent(cvMeta.fileName)}`,
+      {
+        responseType: 'blob',
+        headers: { 'Authorization': `Bearer ${cookies.jwt}` },
+        withCredentials: true,
       }
+    );
 
-      console.log("Envoi du CV pour analyse...");
-      const response = await axios.post('http://localhost:8080/analyze-cv', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-        }
-      });
+    // Création d'un objet File à partir du blob récupéré
+    const cvFile = new File([cvResponse.data], cvMeta.fileName, {
+      type: cvResponse.headers['content-type'] || cvMeta.contentType || 'application/pdf',
+    });
 
-      console.log("Réponse de l'analyse:", response.data);
-            
-      if (response.data.status === 'success') {
-        setCvAnalysis(response.data.cv.analysis);
-                setOpenCvAnalysis(true);
-            } else {
-        setError("Erreur lors de l'analyse du CV");
-            }
-        } catch (err) {
-      console.error('Erreur lors de l\'analyse du CV:', err);
-      setError(err.response?.data?.detail || "Erreur lors de l'analyse du CV");
-        } finally {
-            setLoading(false);
-        }
-  };
+    const formData = new FormData();
+    formData.append('file', cvFile);
+
+    // Envoi du fichier au service d'analyse
+    const response = await axios.post('http://localhost:8080/analyze-cv', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    if (response.data.status === 'success') {
+      setCvAnalysis(response.data.cv.analysis);
+      setOpenCvAnalysis(true);
+    } else {
+      setError("Erreur lors de l'analyse du CV");
+    }
+  } catch (err) {
+    console.error('Erreur lors de l\'analyse du CV:', err);
+    setError(err.response?.data?.detail || err.message || "Erreur lors de l'analyse du CV");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const handleCloseCvAnalysis = () => {
     setOpenCvAnalysis(false);
@@ -698,7 +752,7 @@ useEffect(() => {
   useEffect(() => {
     const fetchAppliedOffers = async () => {
       try {
-        const res = await axios.get('http://localhost:3000/api/joboffers/user/applied', {
+        const res = await axios.get("http://localhost:3000/api/joboffers/user/applied", {
           withCredentials: true,
         });
         setOffers(res.data);
@@ -710,24 +764,24 @@ useEffect(() => {
     fetchAppliedOffers();
   }, []);
 
-  const statuses = ["all", "accepted", "pending", "rejected"];
-
-  const getStatusIcon = (status) => {
-    switch (status.toLowerCase()) {
-      case "accepted":
-        return <CheckCircleOutline color="success" />;
-      case "pending":
-        return <HourglassEmpty color="warning" />;
-      case "rejected":
-        return <Cancel color="error" />;
-      default:
-        return <HelpOutline color="disabled" />;
-    }
+  const getStatusIcon = (status, isActive) => {
+    const size = isActive ? "medium" : "small";
+    if (status === "accepted") return <CheckCircleOutline fontSize={size} />;
+    if (status === "pending") return <HourglassEmpty fontSize={size} />;
+    if (status === "rejected") return <Cancel fontSize={size} />;
+    return <HelpOutline fontSize={size} />;
   };
 
   const filteredOffers = filter === "all"
     ? offers
-    : offers.filter((offer) => offer.status.toLowerCase() === filter);
+    : offers.filter((offer) => offer.status.toLowerCase() === filter.toLowerCase());
+
+
+
+
+
+
+
   if (loading) {
     return (
       <Box sx={{ 
@@ -785,6 +839,9 @@ useEffect(() => {
       </Box>
     );
   }
+// console.log("CV reçu depuis le backend :", userData.cv);
+
+
 
   return (
     <Box sx={{
@@ -1067,6 +1124,7 @@ useEffect(() => {
                     {userData?.yearsOfExperience ? `${userData.yearsOfExperience} an(s)` : 'Non spécifié'}
                   </Typography>
                 </Paper> */}
+
              {/* CV Section */}
     <Paper
   elevation={0}
@@ -1103,8 +1161,15 @@ useEffect(() => {
     {Array.isArray(userData?.cv) && userData.cv.length > 0 ? (
       <Stack spacing={1}>
         {userData.cv.map((cvFile, idx) => (
+         
           <Stack key={idx} direction="row" spacing={1} alignItems="center">
-            <Typography variant="body2">{cvFile.fileName || `CV n°${idx + 1}`}</Typography>
+           <Typography variant="body2">
+  {cvFile?.originalname ||
+   cvFile?.fileName ||
+   cvFile?.name ||
+   `CV n°${idx + 1}`}
+</Typography>
+
 
             <IconButton
               onClick={() =>
@@ -1151,6 +1216,22 @@ useEffect(() => {
 >
   <DeleteIcon />
 </IconButton>
+<Tooltip title="Voir l'analyse du CV">
+  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+    <IconButton 
+      onClick={() => handleOpenCvAnalysis(0)} // analyse du premier CV
+      sx={{ 
+        color: '#1976d2',
+        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+        '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2) }
+      }}
+      aria-label="analyse du cv"
+    >
+      <AssessmentIcon />
+    </IconButton>
+  </motion.div>
+</Tooltip>
+
 
           </Stack>
         ))}
@@ -1205,6 +1286,8 @@ useEffect(() => {
         accept=".pdf,.doc,.docx"
         style={{ display: 'none' }}
       />
+
+
                 {/* Social Links */}
                 <Paper
                   elevation={0}
@@ -1414,12 +1497,45 @@ useEffect(() => {
             <Grid item xs={12} md={9}>
               <Stack spacing={4}>
              
-<Paper elevation={3} style={{ padding: 20, marginTop: 20 }}>
-  <Typography variant="h5" gutterBottom>
+<Paper 
+  elevation={3} 
+  sx={{ 
+    padding: 3,
+    marginTop: 3,
+    borderRadius: 3,
+    background: 'linear-gradient(to bottom, #f9fbfd, #ffffff)'
+  }}
+>
+  <Typography 
+    variant="h5" 
+    gutterBottom 
+    sx={{ 
+      fontWeight: 600,
+      color: '#2c3e50',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 1
+    }}
+  >
+    <DescriptionIcon fontSize="medium" />
     Mes Candidatures
   </Typography>
 
-  <Stack direction="row" spacing={1} marginBottom={2}>
+  <Box sx={{ 
+    display: 'flex', 
+    gap: 1, 
+    mb: 3,
+    flexWrap: 'wrap',
+    '& .MuiButton-root': {
+      borderRadius: 20,
+      textTransform: 'none',
+      fontWeight: 500,
+      px: 2.5,
+      py: 1,
+      transition: 'all 0.3s ease',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    }
+  }}>
     {["all", "accepted", "pending", "rejected"].map((status) => (
       <Button
         key={status}
@@ -1434,31 +1550,111 @@ useEffect(() => {
             : "primary"
         }
         onClick={() => setFilter(status)}
+        startIcon={getStatusIcon(status, filter === status)}
+        sx={{
+          borderWidth: 2,
+          '&:hover': {
+            borderWidth: 2,
+            transform: 'translateY(-2px)'
+          }
+        }}
       >
-        {status === "all" ? "Tous" : status.charAt(0).toUpperCase() + status.slice(1)}
+        {status === "all" 
+          ? "Toutes les candidatures" 
+          : status.charAt(0).toUpperCase() + status.slice(1)}
       </Button>
     ))}
-  </Stack>
+  </Box>
 
   {filteredOffers.length > 0 ? (
-    <List>
-      {filteredOffers.map((offer) => (
-        <ListItem key={offer._id} divider>
-          {getStatusIcon(offer.status)}
-          <ListItemText
-            primary={offer.title}
-            secondary={`Statut : ${
-              offer.status.charAt(0).toUpperCase() + offer.status.slice(1)
-            }`}
-            style={{ marginLeft: 10 }}
-          />
-        </ListItem>
-      ))}
+    <List sx={{ py: 0 }}>
+      {filteredOffers.map((offer) => {
+        const statusColor = offer.status === 'accepted' ? '#4caf50' : 
+                          offer.status === 'pending' ? '#ff9800' : 
+                          offer.status === 'rejected' ? '#f44336' : '#9e9e9e';
+        
+        return (
+          <ListItem 
+            key={offer._id} 
+            sx={{
+              py: 2,
+              px: 3,
+              mb: 1.5,
+              borderRadius: 2,
+              borderLeft: `4px solid ${statusColor}`,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.08)',
+                backgroundColor: '#f8fafc'
+              }
+            }}
+          >
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              width: '100%',
+              gap: 2
+            }}>
+              <Box sx={{
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                backgroundColor: statusColor,
+                flexShrink: 0
+              }} />
+              
+              <ListItemText
+                primary={
+                  <Typography variant="subtitle1" fontWeight={500}>
+                    {offer.title}
+                  </Typography>
+                }
+                secondary={
+                  <Typography variant="body2" color="text.secondary">
+                    {offer.company || "Entreprise non spécifiée"}
+                  </Typography>
+                }
+                sx={{ m: 0 }}
+              />
+              
+              <Chip
+                label={offer.status.charAt(0).toUpperCase() + offer.status.slice(1)}
+                size="small"
+                sx={{
+                  fontWeight: 500,
+                  backgroundColor: `${statusColor}10`,
+                  color: statusColor,
+                  border: `1px solid ${statusColor}30`
+                }}
+              />
+            </Box>
+          </ListItem>
+        )
+      })}
     </List>
   ) : (
-    <Typography variant="body1">
-      Aucune candidature trouvée pour ce statut.
-    </Typography>
+    <Box sx={{ 
+      textAlign: 'center', 
+      py: 6,
+      border: '1px dashed #e0e0e0',
+      borderRadius: 2,
+      backgroundColor: '#fafafa'
+    }}>
+      <InboxIcon sx={{ fontSize: 48, color: '#bdbdbd', mb: 1 }} />
+      <Typography variant="body1" color="textSecondary">
+        Aucune candidature trouvée pour ce statut
+      </Typography>
+      <Button 
+        variant="text" 
+        color="primary" 
+        sx={{ mt: 1.5 }}
+        onClick={() => setFilter('all')}
+      >
+        Voir toutes les candidatures
+      </Button>
+    </Box>
   )}
 </Paper>
 
