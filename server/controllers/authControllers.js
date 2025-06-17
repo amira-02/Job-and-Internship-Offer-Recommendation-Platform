@@ -346,7 +346,7 @@ module.exports.getUserProfile = async (req, res) => {
       // isCurrentlyStudying: user.isCurrentlyStudying,
       country: user.country,
       city: user.city,
-      zipCode: user.zipCode,
+      // zipCode: user.zipCode,
       address: user.address,
           cv: user.cv?.map(f => ({
             fileName: f.fileName,

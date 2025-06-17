@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes");
 const employerRoutes = require("./routes/employerRoutes");
 const jobOfferRoutes = require("./routes/jobOfferRoutes");
+const analyzeRoutes = require('./routes/analyze');
 const multer = require("multer");
 const path = require("path");
 
@@ -44,7 +45,7 @@ const upload = multer({
 app.use("/api/auth", authRoutes);
 app.use("/api/employer", employerRoutes);
 app.use("/api/joboffers", jobOfferRoutes);
-
+app.use('/api', analyzeRoutes);
 // Route de test
 app.get("/", (req, res) => {
   res.json("Hello");

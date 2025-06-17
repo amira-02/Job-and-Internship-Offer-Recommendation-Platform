@@ -23,4 +23,5 @@ router.post('/:id/apply', jobOfferController.applyToJobOffer);
 router.get('/:id/candidates', jobOfferController.getOfferCandidates);
 router.post('/:id/decision', jobOfferController.handleCandidateDecision);
 
+
 module.exports = router; 

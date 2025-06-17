@@ -678,16 +678,74 @@ console.log("CV reçu depuis le backend :", response.data.cv);
 };
 
 
+// const handleOpenCvAnalysis = async (cvIndex = 0) => {
+//     console.log('userData.cv:', userData.cv, 'cvIndex:', cvIndex);
+//   try {
+//     // Vérification que userData.cv est bien un tableau non vide
+//     if (!userData?.cv || !Array.isArray(userData.cv) || userData.cv.length === 0) {
+//       setError("Aucun CV n'a été téléchargé. Veuillez d'abord télécharger un CV.");
+//       return;
+//     }
+
+//     // Vérifier que l'index est valide
+//     if (cvIndex < 0 || cvIndex >= userData.cv.length) {
+//       setError(`CV introuvable à l'index ${cvIndex}.`);
+//       return;
+//     }
+
+//     setLoading(true);
+
+//     const cvMeta = userData.cv[cvIndex];
+
+//     if (!cvMeta.fileName) {
+//       setError(`Le CV à l'index ${cvIndex} ne contient pas de nom de fichier valide.`);
+//       return;
+//     }
+
+//     // Requête GET pour récupérer le fichier CV (blob)
+//     const cvResponse = await axios.get(
+//       `http://localhost:3000/api/auth/cv/${userData._id}?fileName=${encodeURIComponent(cvMeta.fileName)}`,
+//       {
+//         responseType: 'blob',
+//         headers: { 'Authorization': `Bearer ${cookies.jwt}` },
+//         withCredentials: true,
+//       }
+//     );
+
+//     // Création d'un objet File à partir du blob récupéré
+//     const cvFile = new File([cvResponse.data], cvMeta.fileName, {
+//       type: cvResponse.headers['content-type'] || cvMeta.contentType || 'application/pdf',
+//     });
+
+//     const formData = new FormData();
+//     formData.append('file', cvFile);
+
+//     // Envoi du fichier au service d'analyse
+//     const response = await axios.post('http://localhost:8080/analyze-cv', formData, {
+//       headers: { 'Content-Type': 'multipart/form-data' },
+//     });
+
+//     if (response.data.status === 'success') {
+//       setCvAnalysis(response.data.cv.analysis);
+//       setOpenCvAnalysis(true);
+//     } else {
+//       setError("Erreur lors de l'analyse du CV");
+//     }
+//   } catch (err) {
+//     console.error('Erreur lors de l\'analyse du CV:', err);
+//     setError(err.response?.data?.detail || err.message || "Erreur lors de l'analyse du CV");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+
 const handleOpenCvAnalysis = async (cvIndex = 0) => {
-    console.log('userData.cv:', userData.cv, 'cvIndex:', cvIndex);
   try {
-    // Vérification que userData.cv est bien un tableau non vide
     if (!userData?.cv || !Array.isArray(userData.cv) || userData.cv.length === 0) {
-      setError("Aucun CV n'a été téléchargé. Veuillez d'abord télécharger un CV.");
+      setError("Aucun CV n'a été téléchargé.");
       return;
     }
-
-    // Vérifier que l'index est valide
     if (cvIndex < 0 || cvIndex >= userData.cv.length) {
       setError(`CV introuvable à l'index ${cvIndex}.`);
       return;
@@ -696,41 +754,43 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
     setLoading(true);
 
     const cvMeta = userData.cv[cvIndex];
-
-    if (!cvMeta.fileName) {
+    if (!cvMeta.fileName && !cvMeta.originalname && !cvMeta.name) {
       setError(`Le CV à l'index ${cvIndex} ne contient pas de nom de fichier valide.`);
       return;
     }
 
-    // Requête GET pour récupérer le fichier CV (blob)
+    // Récupérer le fichier CV depuis le backend
+    const fileName = cvMeta.fileName || cvMeta.originalname || cvMeta.name;
     const cvResponse = await axios.get(
-      `http://localhost:3000/api/auth/cv/${userData._id}?fileName=${encodeURIComponent(cvMeta.fileName)}`,
+      `http://localhost:3000/api/auth/cv/${userData._id}?fileName=${encodeURIComponent(fileName)}`,
       {
         responseType: 'blob',
-        headers: { 'Authorization': `Bearer ${cookies.jwt}` },
+        headers: { Authorization: `Bearer ${cookies.jwt}` },
         withCredentials: true,
       }
     );
 
-    // Création d'un objet File à partir du blob récupéré
-    const cvFile = new File([cvResponse.data], cvMeta.fileName, {
-      type: cvResponse.headers['content-type'] || cvMeta.contentType || 'application/pdf',
+    const cvFile = new File([cvResponse.data], fileName, {
+      type: cvResponse.headers['content-type'] || 'application/pdf',
     });
 
     const formData = new FormData();
     formData.append('file', cvFile);
 
-    // Envoi du fichier au service d'analyse
-    const response = await axios.post('http://localhost:8080/analyze-cv', formData, {
+    // Envoyer pour analyse
+    const response = await axios.post('http://localhost:3000/api/analyze-cv', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
 
-    if (response.data.status === 'success') {
-      setCvAnalysis(response.data.cv.analysis);
+    console.log("🧠 Réponse analyse CV complète :", response.data);
+
+    if (response.data && response.data.analysis) {
+      setCvAnalysis(response.data.analysis);
       setOpenCvAnalysis(true);
     } else {
-      setError("Erreur lors de l'analyse du CV");
+      setError("Erreur lors de l'analyse du CV : réponse inattendue.");
     }
+
   } catch (err) {
     console.error('Erreur lors de l\'analyse du CV:', err);
     setError(err.response?.data?.detail || err.message || "Erreur lors de l'analyse du CV");
@@ -745,6 +805,32 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
     setOpenCvAnalysis(false);
     setCvAnalysis(null);
   };
+
+
+// const handleUpload = async () => {
+//   const formData = new FormData();
+//   formData.append("cv", selectedFile); // ou file selon ta variable
+
+//   try {
+//     setIsLoading(true); // pour affichage loader
+
+//     const response = await axios.post("http://localhost:3000/api/analyze-cv", formData, {
+//       headers: {
+//         "Content-Type": "multipart/form-data",
+//       },
+//     });
+
+//     console.log("✅ Réponse du backend :", response.data);
+//     setAnalysisResult(response.data.analysis); // → très important
+//   } catch (error) {
+//     console.error("❌ Erreur lors de l'analyse du CV :", error);
+//     alert("Erreur lors de l'analyse du CV !");
+//   } finally {
+//     setIsLoading(false);
+//   }
+// };
+
+
 
  const [offers, setOffers] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -1126,7 +1212,7 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
                 </Paper> */}
 
              {/* CV Section */}
-    <Paper
+  <Paper
   elevation={0}
   sx={{
     p: 3,
@@ -1134,23 +1220,21 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
     bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
     border: '1px solid',
     borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
-    transition: 'all 0.3s ease'
+    transition: 'all 0.3s ease',
   }}
 >
   <Stack spacing={2}>
     <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-      <Stack direction="row" spacing={2} alignItems="center">
-        <Typography variant="h6" sx={{ fontWeight: 600, color: darkMode ? '#fff' : '#1a1a1a' }}>
-          CVs
-        </Typography>
-      </Stack>
+      <Typography variant="h6" sx={{ fontWeight: 600, color: darkMode ? '#fff' : '#1a1a1a' }}>
+        CVs
+      </Typography>
 
       {Array.isArray(userData?.cv) && userData.cv.length > 0 && (
-        <IconButton 
+        <IconButton
           onClick={handleCvMenuOpen}
-          sx={{ 
+          sx={{
             color: darkMode ? alpha('#fff', 0.7) : alpha('#000', 0.5),
-            '&:hover': { color: '#1976d2' }
+            '&:hover': { color: '#1976d2' },
           }}
         >
           <MoreVertIcon />
@@ -1161,15 +1245,10 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
     {Array.isArray(userData?.cv) && userData.cv.length > 0 ? (
       <Stack spacing={1}>
         {userData.cv.map((cvFile, idx) => (
-         
           <Stack key={idx} direction="row" spacing={1} alignItems="center">
-           <Typography variant="body2">
-  {cvFile?.originalname ||
-   cvFile?.fileName ||
-   cvFile?.name ||
-   `CV n°${idx + 1}`}
-</Typography>
-
+            <Typography variant="body2">
+              {cvFile?.originalname || cvFile?.fileName || cvFile?.name || `CV n°${idx + 1}`}
+            </Typography>
 
             <IconButton
               onClick={() =>
@@ -1178,61 +1257,62 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
               sx={{
                 color: '#1976d2',
                 bgcolor: alpha('#1976d2', 0.1),
-                '&:hover': { bgcolor: alpha('#1976d2', 0.2) }
+                '&:hover': { bgcolor: alpha('#1976d2', 0.2) },
               }}
             >
               <DownloadIcon />
             </IconButton>
-<IconButton
-  onClick={async () => {
-    if (window.confirm('Supprimer ce CV ?')) {
-      setLoading(true);
-      try {
-        await axios.delete(`http://localhost:3000/api/auth/cv/${userData._id}/${idx}`, {
-          headers: { 'Authorization': `Bearer ${cookies.jwt}` },
-          withCredentials: true
-        });
 
-        // Mettre à jour le state après suppression
-        const updatedData = await fetchUserData();
-        setUserData({
-          ...updatedData,
-          cv: Array.isArray(updatedData.cv) ? updatedData.cv : updatedData.cv ? [updatedData.cv] : []
-        });
+            <IconButton
+              onClick={async () => {
+                if (window.confirm('Supprimer ce CV ?')) {
+                  setLoading(true);
+                  try {
+                    await axios.delete(`http://localhost:3000/api/auth/cv/${userData._id}/${idx}`, {
+                      headers: { Authorization: `Bearer ${cookies.jwt}` },
+                      withCredentials: true,
+                    });
+                    const updatedData = await fetchUserData();
+                    setUserData({
+                      ...updatedData,
+                      cv: Array.isArray(updatedData.cv)
+                        ? updatedData.cv
+                        : updatedData.cv
+                        ? [updatedData.cv]
+                        : [],
+                    });
+                  } catch (err) {
+                    console.error(err);
+                    setError('Erreur lors de la suppression du CV');
+                  } finally {
+                    setLoading(false);
+                  }
+                }
+              }}
+              sx={{
+                color: '#d32f2f',
+                bgcolor: alpha('#d32f2f', 0.1),
+                '&:hover': { bgcolor: alpha('#d32f2f', 0.2) },
+              }}
+            >
+              <DeleteIcon />
+            </IconButton>
 
-      } catch (err) {
-        console.error(err);
-        setError('Erreur lors de la suppression du CV');
-      } finally {
-        setLoading(false);
-      }
-    }
-  }}
-  sx={{
-    color: '#d32f2f',
-    bgcolor: alpha('#d32f2f', 0.1),
-    '&:hover': { bgcolor: alpha('#d32f2f', 0.2) }
-  }}
->
-  <DeleteIcon />
-</IconButton>
-<Tooltip title="Voir l'analyse du CV">
-  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-    <IconButton 
-      onClick={() => handleOpenCvAnalysis(0)} // analyse du premier CV
-      sx={{ 
-        color: '#1976d2',
-        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-        '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2) }
-      }}
-      aria-label="analyse du cv"
-    >
-      <AssessmentIcon />
-    </IconButton>
-  </motion.div>
-</Tooltip>
-
-
+            <Tooltip title="Voir l'analyse du CV">
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                <IconButton
+                  onClick={() => handleOpenCvAnalysis(idx)} // <-- Passer l'index dynamique ici
+                  sx={{
+                    color: '#1976d2',
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                    '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2) },
+                  }}
+                  aria-label="analyse du cv"
+                >
+                  <AssessmentIcon />
+                </IconButton>
+              </motion.div>
+            </Tooltip>
           </Stack>
         ))}
 
@@ -1245,8 +1325,8 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
             color: '#1976d2',
             '&:hover': {
               borderColor: '#1976d2',
-              bgcolor: alpha('#1976d2', 0.1)
-            }
+              bgcolor: alpha('#1976d2', 0.1),
+            },
           }}
         >
           Ajouter un CV
@@ -1263,13 +1343,16 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
             color: '#1976d2',
             '&:hover': {
               borderColor: '#1976d2',
-              bgcolor: alpha('#1976d2', 0.1)
-            }
+              bgcolor: alpha('#1976d2', 0.1),
+            },
           }}
         >
           Ajouter un CV
         </Button>
-        <Typography variant="caption" sx={{ color: darkMode ? alpha('#fff', 0.7) : alpha('#000', 0.6) }}>
+        <Typography
+          variant="caption"
+          sx={{ color: darkMode ? alpha('#fff', 0.7) : alpha('#000', 0.6) }}
+        >
           Formats acceptés : PDF, DOC, DOCX (max 5MB)
         </Typography>
       </Stack>
@@ -2089,227 +2172,21 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
       </Dialog>
 
       {/* Modal d'analyse du CV */}
-      <Dialog
-        open={openCvAnalysis}
-        onClose={handleCloseCvAnalysis}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
-            backdropFilter: 'blur(12px)',
-            borderRadius: 4,
-            boxShadow: '0 8px 40px rgba(0,0,0,0.1)'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          color: darkMode ? '#fff' : '#1a1a1a',
-          borderBottom: '1px solid',
-          borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
-          pb: 2
-        }}>
-          Analyse de votre CV
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          {cvAnalysis ? (
-            <Stack spacing={4}>
-              {/* Score Global */}
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a' }}>
-                  Score Global
-                </Typography>
-                <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                  <CircularProgress
-                    variant="determinate"
-                    value={cvAnalysis.scoreGlobal * 10}
-                    size={120}
-                    thickness={4}
-                    sx={{
-                      color: cvAnalysis.scoreGlobal >= 7 ? '#4caf50' : 
-                             cvAnalysis.scoreGlobal >= 5 ? '#1976d2' : '#f44336'
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      top: 0,
-                      left: 0,
-                      bottom: 0,
-                      right: 0,
-                      position: 'absolute',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Typography variant="h4" component="div" sx={{ color: darkMode ? '#fff' : '#1a1a1a' }}>
-                      {cvAnalysis.scoreGlobal}/10
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
+     {openCvAnalysis && (
+  <Dialog open={openCvAnalysis} onClose={() => setOpenCvAnalysis(false)}>
+    <DialogTitle>Analyse de votre CV</DialogTitle>
+    <DialogContent>
+      <Typography component="pre" style={{ whiteSpace: 'pre-wrap' }}>
+        {cvAnalysis || "Analyse vide"}
+      </Typography>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={() => setOpenCvAnalysis(false)}>Fermer</Button>
+    </DialogActions>
+  </Dialog>
+)}
 
-              <Divider sx={{ borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08) }} />
 
-              {/* Points Forts */}
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a', display: 'flex', alignItems: 'center' }}>
-                  <CheckCircleOutlineIcon sx={{ color: '#4caf50', mr: 1 }} />
-                  Points Forts
-                </Typography>
-                <List>
-                  {cvAnalysis.pointsForts?.map((point, index) => (
-                    <ListItem key={index} sx={{ py: 0.5 }}>
-                      <ListItemText 
-                        primary={point}
-                        sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-
-              {/* Points à Améliorer */}
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a', display: 'flex', alignItems: 'center' }}>
-                  <WarningAmberIcon sx={{ color: '#ff9800', mr: 1 }} />
-                  Points à Améliorer
-                </Typography>
-                <List>
-                  {cvAnalysis.pointsFaibles?.map((point, index) => (
-                    <ListItem key={index} sx={{ py: 0.5 }}>
-                      <ListItemText 
-                        primary={point}
-                        sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-
-              {/* Recommandations */}
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a', display: 'flex', alignItems: 'center' }}>
-                  <LightbulbOutlineIcon sx={{ color: '#1976d2', mr: 1 }} />
-                  Recommandations
-                </Typography>
-                <List>
-                  {cvAnalysis.recommandations?.map((reco, index) => (
-                    <ListItem key={index} sx={{ py: 0.5 }}>
-                      <ListItemText 
-                        primary={reco}
-                        sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-
-              {/* Mots-clés */}
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a', display: 'flex', alignItems: 'center' }}>
-                  <LocalOfferOutlinedIcon sx={{ mr: 1 }} />
-                  Mots-clés Suggérés
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {cvAnalysis.motsClesSuggérés?.map((motCle, index) => (
-                    <Chip
-                      key={index}
-                      label={motCle}
-                      sx={{
-                        bgcolor: darkMode ? alpha('#1976d2', 0.2) : alpha('#1976d2', 0.1),
-                        color: darkMode ? '#90caf9' : '#1976d2',
-                        '&:hover': {
-                          bgcolor: darkMode ? alpha('#1976d2', 0.3) : alpha('#1976d2', 0.2)
-                        }
-                      }}
-                    />
-                  ))}
-                </Box>
-              </Box>
-
-              {/* Offres Correspondantes */}
-              {cvAnalysis.offresCorrespondantes && cvAnalysis.offresCorrespondantes.length > 0 && (
-                <Box>
-                  <Typography variant="h6" sx={{ mb: 2, color: darkMode ? '#fff' : '#1a1a1a', display: 'flex', alignItems: 'center' }}>
-                    <WorkIcon sx={{ mr: 1 }} />
-                    Offres Correspondantes
-                  </Typography>
-                  <Stack spacing={2}>
-                    {cvAnalysis.offresCorrespondantes.map((job, index) => (
-                      <Paper
-                        key={index}
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          borderRadius: 2,
-                          bgcolor: darkMode ? alpha('#fff', 0.05) : alpha('#000', 0.02),
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            bgcolor: darkMode ? alpha('#fff', 0.08) : alpha('#000', 0.04),
-                            transform: 'translateY(-2px)'
-                          }
-                        }}
-                      >
-                        <Stack spacing={1}>
-                          <Typography variant="h6" sx={{ color: darkMode ? '#fff' : '#1a1a1a' }}>
-                            {job.title}
-                          </Typography>
-                          <Typography variant="subtitle1" sx={{ color: darkMode ? '#90caf9' : '#1976d2' }}>
-                            {job.company}
-                          </Typography>
-                          <Stack direction="row" spacing={2}>
-                            <Typography variant="body2" sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}>
-                              <LocationOnIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
-                              {job.location}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a' }}>
-                              <WorkIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
-                              {job.experienceLevel}
-                            </Typography>
-                          </Stack>
-                          <Typography variant="body2" sx={{ color: darkMode ? '#e0e0e0' : '#4a4a4a', mt: 1 }}>
-                            {job.description}
-                          </Typography>
-                          <Box sx={{ mt: 1 }}>
-                            <Typography variant="subtitle2" sx={{ color: darkMode ? '#90caf9' : '#1976d2', mb: 0.5 }}>
-                              Compétences requises:
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {job.requiredSkills?.map((skill, idx) => (
-                                <Chip
-                                  key={idx}
-                                  label={skill}
-                                  size="small"
-                                  sx={{
-                                    bgcolor: darkMode ? alpha('#1976d2', 0.2) : alpha('#1976d2', 0.1),
-                                    color: darkMode ? '#90caf9' : '#1976d2'
-                                  }}
-                                />
-                              ))}
-                            </Box>
-                          </Box>
-                        </Stack>
-                      </Paper>
-                    ))}
-                  </Stack>
-                </Box>
-              )}
-            </Stack>
-          ) : (
-            <Typography>Analyse en cours...</Typography>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ 
-          borderTop: '1px solid',
-          borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
-          p: 2
-        }}>
-          <Button onClick={handleCloseCvAnalysis} variant="outlined">
-            Fermer
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

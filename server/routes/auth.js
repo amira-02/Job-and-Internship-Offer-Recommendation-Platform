@@ -32,4 +32,4 @@ router.post('/logout', (req, res) => {
 });
 AuthRoutes.post('/register',Reigster)
 AuthRoutes.post('/verifyEmail',VerfiyEmail)
-module.exports = router; 
+module.exports = router;    

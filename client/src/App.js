@@ -13,7 +13,7 @@ import EmployerDashboard from "./pages/EmployerDashboard";
 import "./App.css";
 import ApplyForm from './pages/ApplyForm';
  import OfferCandidates from './pages/OfferCandidates';
-
+import OfferDetail from './pages/OfferDetail';
 
 // Composant pour gérer l'affichage conditionnel du header
 function AppContent() {
@@ -36,6 +36,7 @@ function AppContent() {
         <Route path="/offers" element={<Offers />} />
         <Route path="/offers/:id/apply" element={<ApplyForm />} />   
         <Route path="/employer/offers/:id/candidates" element={<OfferCandidates />} />
+         <Route path="/offers/:id" element={<OfferDetail />} />
       </Routes>
     </div>
   );

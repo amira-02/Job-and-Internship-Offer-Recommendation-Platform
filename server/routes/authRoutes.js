@@ -237,4 +237,8 @@ router.delete('/cv/:userId/:cvIndex', async (req, res) => {
     res.status(404).json({ status: false, message: 'CV non trouvé' });
   }
 });
+
+
+
+
 module.exports = router;

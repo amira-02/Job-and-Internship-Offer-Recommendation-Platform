@@ -57,22 +57,19 @@ exports.getAllJobOffers = async (req, res) => {
 
 // Récupérer une offre d'emploi par son ID
 exports.getJobOfferById = async (req, res) => {
+  console.log('Requête reçue pour l’ID:', req.params.id);  // <-- ajoute ça
   try {
     const jobOffer = await JobOffer.findById(req.params.id).select('-__v');
-    
     if (!jobOffer) {
       return res.status(404).json({ message: 'Offre non trouvée' });
     }
-
     res.status(200).json(jobOffer);
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'offre:', error);
-    res.status(500).json({ 
-      message: 'Erreur lors de la récupération de l\'offre',
-      error: error.message 
-    });
+    res.status(500).json({ message: 'Erreur lors de la récupération de l\'offre', error: error.message });
   }
 };
+
 
 // Rechercher des offres d'emploi
 exports.searchJobOffers = async (req, res) => {
