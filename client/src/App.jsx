@@ -21,6 +21,7 @@ import OfferCandidates from './pages/OfferCandidates'; // <-- Ajoute cette ligne
 import NotFound from './pages/NotFound';
 import OfferDetail from './pages/OfferDetail';
 import './styles/App.css';
+import CvAnalysisPage from './pages/CvAnalysisPage';
 
 function AppContent() {
   const location = useLocation();
@@ -49,6 +50,7 @@ function AppContent() {
           <Route path="/applications/:id" element={<ApplicationDetails />} />
           <Route path="/admin/offers/:id/candidates" element={<OfferCandidates />} />
          <Route path="/:id" element={<OfferDetail />} />
+        <Route path="/cv-analysis" element={<CvAnalysisPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

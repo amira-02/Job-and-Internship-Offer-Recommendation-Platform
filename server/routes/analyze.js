@@ -43,12 +43,12 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() }); // ou utilise celui défini dans index.js si exporté
+const upload = multer();
+const analyzeController = require('../controllers/analyzeController');
 
-const { analyzeCv } = require('../controllers/analyzeController');
-
-router.post('/analyze-cv', upload.single('file'), analyzeCv);
+router.post('/analyze-cv', upload.single('file'), analyzeController.analyzeCv);
 
 module.exports = router;
+
 
 

@@ -24,4 +24,6 @@ router.get('/:id/candidates', jobOfferController.getOfferCandidates);
 router.post('/:id/decision', jobOfferController.handleCandidateDecision);
 
 
+// router.get("/match/:userId",  jobOfferController.matchJobOffersToCv);
+// router.post('/recommendations', jobOfferController.getRecommendations);
 module.exports = router; 

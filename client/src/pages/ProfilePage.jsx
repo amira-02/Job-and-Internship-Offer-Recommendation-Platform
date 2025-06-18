@@ -678,66 +678,7 @@ console.log("CV reçu depuis le backend :", response.data.cv);
 };
 
 
-// const handleOpenCvAnalysis = async (cvIndex = 0) => {
-//     console.log('userData.cv:', userData.cv, 'cvIndex:', cvIndex);
-//   try {
-//     // Vérification que userData.cv est bien un tableau non vide
-//     if (!userData?.cv || !Array.isArray(userData.cv) || userData.cv.length === 0) {
-//       setError("Aucun CV n'a été téléchargé. Veuillez d'abord télécharger un CV.");
-//       return;
-//     }
 
-//     // Vérifier que l'index est valide
-//     if (cvIndex < 0 || cvIndex >= userData.cv.length) {
-//       setError(`CV introuvable à l'index ${cvIndex}.`);
-//       return;
-//     }
-
-//     setLoading(true);
-
-//     const cvMeta = userData.cv[cvIndex];
-
-//     if (!cvMeta.fileName) {
-//       setError(`Le CV à l'index ${cvIndex} ne contient pas de nom de fichier valide.`);
-//       return;
-//     }
-
-//     // Requête GET pour récupérer le fichier CV (blob)
-//     const cvResponse = await axios.get(
-//       `http://localhost:3000/api/auth/cv/${userData._id}?fileName=${encodeURIComponent(cvMeta.fileName)}`,
-//       {
-//         responseType: 'blob',
-//         headers: { 'Authorization': `Bearer ${cookies.jwt}` },
-//         withCredentials: true,
-//       }
-//     );
-
-//     // Création d'un objet File à partir du blob récupéré
-//     const cvFile = new File([cvResponse.data], cvMeta.fileName, {
-//       type: cvResponse.headers['content-type'] || cvMeta.contentType || 'application/pdf',
-//     });
-
-//     const formData = new FormData();
-//     formData.append('file', cvFile);
-
-//     // Envoi du fichier au service d'analyse
-//     const response = await axios.post('http://localhost:8080/analyze-cv', formData, {
-//       headers: { 'Content-Type': 'multipart/form-data' },
-//     });
-
-//     if (response.data.status === 'success') {
-//       setCvAnalysis(response.data.cv.analysis);
-//       setOpenCvAnalysis(true);
-//     } else {
-//       setError("Erreur lors de l'analyse du CV");
-//     }
-//   } catch (err) {
-//     console.error('Erreur lors de l\'analyse du CV:', err);
-//     setError(err.response?.data?.detail || err.message || "Erreur lors de l'analyse du CV");
-//   } finally {
-//     setLoading(false);
-//   }
-// };
 
 
 const handleOpenCvAnalysis = async (cvIndex = 0) => {
@@ -784,10 +725,19 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
 
     console.log("🧠 Réponse analyse CV complète :", response.data);
 
-    if (response.data && response.data.analysis) {
-      setCvAnalysis(response.data.analysis);
-      setOpenCvAnalysis(true);
-    } else {
+    // if (response.data && response.data.analysis) {
+    //   setCvAnalysis(response.data.analysis);
+    //   setOpenCvAnalysis(true);
+    // } 
+    if (response.data.analysis) {
+  const blobUrl = URL.createObjectURL(cvFile);
+  navigate('/cv-analysis', {
+    state: {
+      cvUrl: blobUrl,
+      analysis: response.data.analysis,
+    },
+  });
+}else {
       setError("Erreur lors de l'analyse du CV : réponse inattendue.");
     }
 

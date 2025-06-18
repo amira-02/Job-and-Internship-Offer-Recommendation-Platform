@@ -1,15 +1,32 @@
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 
-const prompt = 'analyse ce cv donne les point fort et faible et ce que je doit faire por lameliorer ';
+function runLlamaPrompt(prompt) {
+  return new Promise((resolve, reject) => {
+    const ollama = spawn('ollama', ['run', 'llama3']);
 
-exec(`ollama run llama3 "${prompt.replace(/"/g, '\\"')}"`, (error, stdout, stderr) => {
-  if (error) {
-    console.error('Erreur Ollama:', error);
-    return;
-  }
-  if (stderr) {
-    console.error('stderr Ollama:', stderr);
-    return;
-  }
-  console.log('Réponse Ollama:', stdout);
-});
+    let output = '';
+    let errorOutput = '';
+
+    ollama.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    ollama.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    ollama.on('close', (code) => {
+      if (code !== 0) {
+        return reject(new Error(errorOutput || `Ollama exited with code ${code}`));
+      }
+      resolve(output);
+    });
+
+    ollama.stdin.write(prompt);
+    ollama.stdin.end();
+  });
+}
+
+module.exports = {
+  runLlamaPrompt,
+};

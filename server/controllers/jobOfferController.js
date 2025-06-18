@@ -1,6 +1,9 @@
 const JobOffer = require('../model/JobOfferModel');
 
 const User = require('../model/authModel');
+const LlamaService = require('../../CvAnalyzer/llamaService');
+
+
 
 const { sendConfirmationEmail,sendAcceptanceEmail, sendRejectionEmail } = require('../middleware/Email');
 
@@ -388,5 +391,49 @@ exports.getUserAppliedOffers = async (req, res) => {
   } catch (error) {
     console.error("❌ Erreur lors de la récupération des candidatures:", error);
     res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+
+
+// exports.getRecommendations = async (req, res) => {
+//   try {
+//     const { analysis } = req.body;
+//     if (!analysis) return res.status(400).json({ error: 'Missing CV analysis' });
+
+//     const offers = await JobOffer.find();
+
+//     const prompt = `
+// Tu es un assistant de recrutement. Voici le CV résumé :
+// """
+// ${analysis}
+// """
+// Voici les offres d'emploi disponibles :
+// ${offers.map((offer, i) => `\nOffre ${i + 1}:\nTitre: ${offer.jobTitle}\nDescription: ${offer.jobDescription}`).join('\n')}
+
+// Donne-moi les 3 offres les plus compatibles avec ce CV et explique pourquoi.
+// `;
+
+//     const response = await LlamaService.runPrompt(prompt);
+
+//     res.json({ recommendations: response });
+//   } catch (error) {
+//     console.error('Erreur dans getRecommendations:', error);
+//     res.status(500).json({ error: 'Erreur serveur lors de la recommandation' });
+//   }
+// };
+exports.getRecommendations = async (req, res) => {
+  try {
+    const { analysis } = req.body;
+    if (!analysis) return res.status(400).json({ error: 'Missing CV analysis' });
+
+    const offers = await JobOffer.find();
+
+    const response = await LlamaService.runPrompt(analysis, offers);
+
+    res.json({ recommendations: response });
+  } catch (error) {
+    console.error('Erreur dans getRecommendations:', error);
+    res.status(500).json({ error: 'Erreur serveur lors de la recommandation' });
   }
 };
