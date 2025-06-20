@@ -27,10 +27,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 
-// Middleware
-app.use(express.json());
+// Middleware;
 app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
+// Autorise jusqu'à 10 Mo pour les requêtes JSON ou form-data
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
 
 // Configuration de Multer pour le stockage des fichiers
 const storage = multer.memoryStorage();

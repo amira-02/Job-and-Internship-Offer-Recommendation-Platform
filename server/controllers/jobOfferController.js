@@ -437,3 +437,5 @@ exports.getRecommendations = async (req, res) => {
     res.status(500).json({ error: 'Erreur serveur lors de la recommandation' });
   }
 };
+
+

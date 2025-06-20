@@ -731,12 +731,14 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
     // } 
     if (response.data.analysis) {
   const blobUrl = URL.createObjectURL(cvFile);
-  navigate('/cv-analysis', {
-    state: {
-      cvUrl: blobUrl,
-      analysis: response.data.analysis,
-    },
-  });
+ navigate('/cv-analysis', {
+  state: {
+    cvBufferBase64: response.data.cvBufferBase64,
+    analysis: response.data.analysis,
+    topOffers: response.data.topOffers,
+  },
+});
+
 }else {
       setError("Erreur lors de l'analyse du CV : réponse inattendue.");
     }

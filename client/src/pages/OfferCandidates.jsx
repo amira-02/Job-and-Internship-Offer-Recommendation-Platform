@@ -14,7 +14,8 @@ import {
   Popconfirm,
   message,
   Space,
-  Badge
+  Badge,
+  Modal 
 } from 'antd';
 import {
   UserOutlined,
@@ -28,8 +29,11 @@ import {
   SolutionOutlined,
   CheckOutlined,
   CloseOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+  SearchOutlined 
 } from '@ant-design/icons';
+
+
 
 const { Title, Text } = Typography;
 
@@ -77,6 +81,36 @@ const OfferCandidates = () => {
     }
   };
 
+const [analyses, setAnalyses] = useState([]);
+
+const handleAnalyzeCandidates = async () => {
+  try {
+    console.log("🕵️‍♀️ Début de l’analyse des candidats pour l’offre ID :", id);
+
+    const response = await axios.get(`http://localhost:3000/api/${id}/analyze-candidates`);
+    const candidates = response.data.allCandidates || [];
+
+    console.log("✅ Candidats analysés :", candidates);
+
+    setAnalyses(candidates);
+    message.success("✅ Analyse terminée !");
+  } catch (err) {
+    console.error("❌ Erreur Axios lors de l’analyse des candidats :", err);
+
+    if (err.response) {
+      console.log("📛 Statut HTTP :", err.response.status);
+      console.log("📦 Données de l’erreur :", err.response.data);
+      console.log("🌐 URL appelée :", err.config.url);
+    } else {
+      console.log("🌐 Erreur réseau ou autre :", err.message);
+    }
+
+    message.error("⚠️ Échec de l’analyse des candidats.");
+  }
+};
+
+
+
   return (
     <div style={{ padding: '24px 16px', maxWidth: 1400, margin: '0 auto' }}>
       {/* Boutons de navigation en haut */}
@@ -94,6 +128,13 @@ const OfferCandidates = () => {
           type="primary"
         >
           Tableau de bord
+        </Button>
+        <Button 
+          type="primary" 
+          icon={<SearchOutlined />} 
+          onClick={handleAnalyzeCandidates}
+        >
+          Analyser tous les CVs
         </Button>
       </Space>
       
@@ -335,7 +376,32 @@ const OfferCandidates = () => {
               );
             })}
           </Row>
-          
+            {analyses.length > 0 && (
+  <>
+    <Divider />
+    <Typography.Title level={3}>📊 Rapport d'analyse des candidats</Typography.Title>
+
+    {analyses.map((a) => (
+      <Card key={a.candidateId} title={`${a.candidateName} (Score: ${a.averageScore}/10)`} style={{ marginBottom: 16 }}>
+        {a.rawAnalyses.length > 0 ? (
+          a.rawAnalyses.map((cv, index) => (
+            <div key={index} style={{ marginBottom: 10 }}>
+              <Typography.Text strong>📄 CV : {cv.file}</Typography.Text>
+              <Typography.Paragraph style={{ whiteSpace: 'pre-wrap', marginTop: 4 }}>
+                {cv.analysis}
+              </Typography.Paragraph>
+            </div>
+          ))
+        ) : (
+          <Typography.Text type="secondary">Aucune analyse disponible pour ce candidat.</Typography.Text>
+        )}
+      </Card>
+    ))}
+  </>
+)}
+
+
+         
           {/* Boutons de navigation en bas */}
           <div style={{ textAlign: 'center', marginTop: 32 }}>
             <Space>
