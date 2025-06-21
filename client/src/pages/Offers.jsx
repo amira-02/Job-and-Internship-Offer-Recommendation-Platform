@@ -622,42 +622,43 @@ const Offers = () => {
                     </div>
                     <div style={{ color: '#1a1a1a', fontWeight: 600, marginBottom: 8 }}>{salaryDisplay}</div>
                    <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', alignSelf: 'flex-end' }}>
-  <button
-    style={{ 
-      background: '#e8f1fa', 
-      color: '#1976d2', 
-      border: 'none', 
-      borderRadius: 10, 
-      padding: '8px 24px', 
-      fontWeight: 600, 
-      cursor: 'pointer' 
-    }}
-    onClick={() => navigate(`/offers/${offer._id}`)}
-  >
-    Voir détails
-  </button>
+                    <button
+                      style={{ 
+                        background: '#e8f1fa', 
+                        color: '#1976d2', 
+                        border: 'none', 
+                        borderRadius: 10, 
+                        padding: '8px 24px', 
+                        fontWeight: 600, 
+                        cursor: 'pointer' 
+                      }}
+                      onClick={() => navigate(`/offers/${offer._id}`)}
+                    >
+                      Voir détails
+                    </button>
 
-  <button
-    style={{ 
-      background: '#e8f1fa', 
-      color: '#1976d2', 
-      border: 'none', 
-      borderRadius: 10, 
-      padding: '8px 24px', 
-      fontWeight: 600, 
-      cursor: 'pointer' 
-    }}
-    onClick={() => {
-      if (offer.scraped && offer.link) {
-        window.open(offer.link, '_blank');
-      } else {
-        navigate(`/offers/${offer._id}/apply`);
-      }
-    }}
-  >
-    APPLY
-  </button>
-</div>
+                  <button
+                    style={{ 
+                      background: '#e8f1fa', 
+                      color: '#1976d2', 
+                      border: 'none', 
+                      borderRadius: 10, 
+                      padding: '8px 24px', 
+                      fontWeight: 600, 
+                      cursor: 'pointer' 
+                    }}
+                    onClick={() => {
+                      if (offer.source === "Option Carriere" && offer.sourceUrl) {
+                        window.open(offer.sourceUrl, '_blank'); // 🔗 Redirige vers site externe
+                      } else {
+                        navigate(`/offers/${offer._id}/apply`); // 🔗 Page interne d'application
+                      }
+                    }}
+                  >
+                    APPLY
+                  </button>
+
+                  </div>
 
                   </div>
                 );

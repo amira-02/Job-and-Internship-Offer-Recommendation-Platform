@@ -29,6 +29,8 @@ import {
   BarChartOutlined,
   DashboardOutlined
 } from '@ant-design/icons';
+// import { Row, Col, Card, Button, Title } from 'antd';
+import { CheckOutlined, RocketOutlined, SyncOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import PostJobForm from '../components/PostJobForm';
 import EmployerProfileForm from '../components/EmployerProfileForm';
@@ -60,7 +62,8 @@ function EmployerDashboard() {
   const [cookies, setCookie, removeCookie] = useCookies(['jwt']);
 
   const isMobile = useMediaQuery('(max-width: 768px)');
-
+// const user = JSON.parse(localStorage.getItem("user")) || {};
+  console.log("User Data:", user); 
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
@@ -218,326 +221,684 @@ function EmployerDashboard() {
     }
   }, [user, selectedMenuItem, loadJobOffers]);
 
-  const renderSidebar = () => (
-    <>
-      <div className="company-profile">
-        <Avatar 
-          size={collapsed ? 40 : 64} 
-          icon={<BankOutlined />} 
-          className="company-avatar"
-        />
-        {!collapsed && (
-          <>
-            <Title level={4} className="company-name">{user?.companyName}</Title>
-            <Text type="secondary" className="company-email">{user?.email}</Text>
-            <Progress 
-              percent={75} 
-              size="small" 
-              status="active" 
-              className="profile-progress"
-              format={percent => `Profil ${percent}% complet`}
-            />
-          </>
-        )}
-      </div>
-      
-      <Menu
-        mode="inline"
-        selectedKeys={[activeMenu]}
-        onClick={handleMenuClick}
-        className="dashboard-menu"
-      >
-        <Menu.Item key="1" icon={<UserOutlined />}>
-          My Profile
-        </Menu.Item>
-        <Menu.Item key="2" icon={<FileTextOutlined />}>
-          My Jobs
-        </Menu.Item>
-        <Menu.Item key="3" icon={<MailOutlined />}>
-          Messages <Badge count={5} offset={[10, 0]} />
-        </Menu.Item>
-        <Menu.Item key="4" icon={<PlusOutlined />}>
-          Submit Job
-        </Menu.Item>
-        <Menu.Item key="5" icon={<StarOutlined />}>
-          Saved Candidate
-        </Menu.Item>
-        <Menu.Item key="6" icon={<CreditCardOutlined />}>
-          Subscription & Billing
-        </Menu.Item>
-        <Menu.Item key="7" icon={<NotificationOutlined />}>
-          Notifications
-        </Menu.Item>
-        <Menu.Item key="edit-profile" icon={<SettingOutlined />}>
-          Edit Profile
-        </Menu.Item>
-        <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
-          Logout
-        </Menu.Item>
-      </Menu>
-    </>
-  );
+const renderSidebar = () => (
+  <>
+    <div className="company-profile" style={{ padding: '24px', textAlign: 'center' }}>
+      <Avatar 
+        size={collapsed ? 48 : 64} 
+        icon={<BankOutlined />} 
+        style={{ backgroundColor: '#3b82f6', marginBottom: 12 }}
+      />
 
-  const renderJobOffers = () => {
-    if (loadingJobs) {
-      return (
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-          <Spin size="large" />
-          <p>Chargement des offres d'emploi...</p>
-        </div>
-      );
-    }
-    if (jobOffers.length === 0) {
-      return <Empty description="Aucune offre d'emploi publiée." />;
-    }
+      {!collapsed && (
+        <>
+          <Title level={5} style={{ marginBottom: 8 }}>{user?.companyName || 'Entreprise'}</Title>
+
+          <div style={{ fontSize: '0.85rem', color: '#6b7280', textAlign: 'left', marginBottom: 12 }}>
+            <p style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <GlobalOutlined style={{ color: '#3b82f6' }} />
+              <span>{user?.website || 'N/A'}</span>
+            </p>
+            <p style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
+              <PhoneOutlined style={{ color: '#3b82f6' }} />
+              <span>{user?.phone || 'Non renseigné'}</span>
+            </p>
+            <p style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <EnvironmentOutlined style={{ color: '#3b82f6' }} />
+              <span>{user?.location || 'Non spécifié'}</span>
+            </p>
+          </div>
+
+          <Progress 
+            percent={75} 
+            size="small" 
+            status="active" 
+            strokeColor="#3b82f6"
+            style={{ marginTop: 8 }}
+            format={percent => `Profil ${percent}% complet`}
+          />
+        </>
+      )}
+    </div>
+
+    <Menu
+      mode="inline"
+      selectedKeys={[activeMenu]}
+      onClick={handleMenuClick}
+      className="dashboard-menu"
+      style={{ borderRight: 'none', marginTop: 16 }}
+    >
+      <Menu.Item key="1" icon={<UserOutlined />}>
+        Dashboard
+      </Menu.Item>
+      <Menu.Item key="2" icon={<FileTextOutlined />}>
+        Mes Offres
+      </Menu.Item>
+      <Menu.Item key="4" icon={<PlusOutlined />}>
+        Poster une Offre
+      </Menu.Item>
+      <Menu.Item key="5" icon={<StarOutlined />}>
+        Candidats Sauvegardés
+      </Menu.Item>
+      <Menu.Item key="6" icon={<CreditCardOutlined />}>
+        Abonnement & Paiement
+      </Menu.Item>
+      <Menu.Item key="7" icon={<NotificationOutlined />}>
+        Notifications
+      </Menu.Item>
+      <Menu.Item key="edit-profile" icon={<SettingOutlined />}>
+        Modifier le Profil
+      </Menu.Item>
+      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
+        Déconnexion
+      </Menu.Item>
+    </Menu>
+  </>
+);
+
+const renderJobOffers = () => {
+  if (loadingJobs) {
     return (
-      <Row gutter={[24, 24]}>
-        {jobOffers.map(offer => (
-          <Col xs={24} sm={12} md={8} key={offer._id}>
-            <Card
-              hoverable
-              title={offer.jobTitle}
-              extra={<Link to={`/job-offers/${offer._id}`}><EyeOutlined /> Voir</Link>}
-              actions={[
-                <EditOutlined key="edit" onClick={() => navigate(`/edit-job-offer/${offer._id}`)} />,
-                <DeleteOutlined key="delete" onClick={() => console.log('Delete')} />,
-              ]}
-            >
-              <p><strong>Catégorie:</strong> <Tag color="blue">{offer.jobCategory}</Tag></p>
-              <p><strong>Type:</strong> <Tag color="green">{offer.jobType}</Tag></p>
-              <p><strong>Salaire:</strong> {offer.minSalary} - {offer.maxSalary} {offer.salaryPeriod}</p>
-              <p><strong>Localisation:</strong> {offer.address}, {offer.country}</p>
-              <p><strong>Compétences:</strong> {offer.skills.map(skill => <Tag key={skill}>{skill}</Tag>)}</p>
-              <p><strong>Niveau d'expérience:</strong> {offer.experienceLevel}</p>
-              <Button
-  type="link"
-  onClick={() => navigate(`/employer/offers/${offer._id}/candidates`)}
->
-  Voir les candidats
-</Button>
-            </Card>
-            
-          </Col>
-        ))}
-      </Row>
+      <div style={{ textAlign: 'center', padding: '40px' }}>
+        <Spin size="large" />
+        <p style={{ marginTop: 16, fontSize: '16px', color: '#6b7280' }}>Chargement des offres d'emploi...</p>
+      </div>
     );
-  };
+  }
 
+  if (jobOffers.length === 0) {
+    return (
+      <Empty
+        description={<span style={{ color: '#9ca3af' }}>Aucune offre d'emploi publiée.</span>}
+        style={{ marginTop: 50 }}
+      />
+    );
+  }
+
+  return (
+    <Row gutter={[24, 24]}>
+      {jobOffers.map(offer => (
+        <Col xs={24} sm={12} md={8} key={offer._id}>
+          <Card
+            hoverable
+            style={{
+              borderRadius: '16px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.05)',
+              transition: 'all 0.3s ease',
+            }}
+            title={
+              <div style={{ fontWeight: 600, fontSize: '18px', color: '#1f2937' }}>
+                {offer.jobTitle}
+              </div>
+            }
+            extra={
+              <Link to={`/job-offers/${offer._id}`} style={{ fontSize: '14px', color: '#3b82f6' }}>
+                <EyeOutlined style={{ marginRight: 4 }} />
+                Voir
+              </Link>
+            }
+            actions={[
+              <Tooltip title="Modifier">
+                <EditOutlined key="edit" onClick={() => navigate(`/edit-job-offer/${offer._id}`)} />
+              </Tooltip>,
+              <Tooltip title="Supprimer">
+                <DeleteOutlined key="delete" onClick={() => console.log('Delete')} />
+              </Tooltip>,
+            ]}
+          >
+            <p style={{ marginBottom: 8 }}>
+              <strong>📂 Catégorie :</strong>{' '}
+              <Tag color="blue">{offer.jobCategory}</Tag>
+            </p>
+            <p style={{ marginBottom: 8 }}>
+              <strong>🕘 Type :</strong>{' '}
+              <Tag color="green">{offer.jobType}</Tag>
+            </p>
+            <p style={{ marginBottom: 8 }}>
+              <strong>💰 Salaire :</strong>{' '}
+              <span style={{ color: '#10b981' }}>
+                {offer.minSalary} - {offer.maxSalary} {offer.salaryPeriod}
+              </span>
+            </p>
+            <p style={{ marginBottom: 8 }}>
+              <strong>📍 Localisation :</strong>{' '}
+              {offer.address}, {offer.country}
+            </p>
+            <p style={{ marginBottom: 8 }}>
+              <strong>🧠 Compétences :</strong>{' '}
+              {offer.skills.map(skill => (
+                <Tag key={skill} color="geekblue" style={{ marginBottom: 4 }}>{skill}</Tag>
+              ))}
+            </p>
+            <p style={{ marginBottom: 16 }}>
+              <strong>🎓 Expérience :</strong>{' '}
+              {offer.experienceLevel}
+            </p>
+
+            <Button
+              type="primary"
+              block
+              icon={<UserOutlined />}
+              onClick={() => navigate(`/employer/offers/${offer._id}/candidates`)}
+              style={{ marginTop: 12, borderRadius: '8px' }}
+            >
+              Voir les candidats
+            </Button>
+          </Card>
+        </Col>
+      ))}
+    </Row>
+  );
+};
 
 
   
-  const renderContent = () => {
-    switch (selectedMenuItem) {
-      case 'dashboard':
-      case '1':
-        // Sample data for charts
-        const applicationsData = [
-          { month: 'Jan', applications: 35 },
-          { month: 'Feb', applications: 42 },
-          { month: 'Mar', applications: 28 },
-          { month: 'Apr', applications: 45 },
-          { month: 'May', applications: 38 },
-          { month: 'Jun', applications: 50 },
-        ];
+ const renderContent = () => {
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-        const jobStatusData = [
-          { name: 'Active', value: 8 },
-          { name: 'Closed', value: 3 },
-          { name: 'Draft', value: 2 },
-        ];
-
-        const candidateSourcesData = [
-          { name: 'Direct', value: 40 },
-          { name: 'LinkedIn', value: 30 },
-          { name: 'Indeed', value: 20 },
-          { name: 'Other', value: 10 },
-        ];
-
-        const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-
-        return (
-          <div className="dashboard-content">
-            <Row gutter={[24, 24]}>
-              <Col xs={24} md={12} lg={8}>
-                <Card title="Aperçu du Profil" bordered={false} className="dashboard-card">
-                  <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                    <div className="profile-header">
-                      <Avatar size={64} icon={<BankOutlined />} />
-                      <div className="profile-info">
-                        <Title level={4}>{user?.companyName}</Title>
-                        <Text type="secondary">{user?.email}</Text>
-                      </div>
-                    </div>
-                    <div className="profile-details">
-                      <p><GlobalOutlined /> {user?.website || 'N/A'}</p>
-                      <p><PhoneOutlined /> {user?.phone}</p>
-                      <p><EnvironmentOutlined /> {user?.location}</p>
-                    </div>
-                  </Space>
-                </Card>
-              </Col>
-              <Col xs={24} md={12} lg={8}>
-                <Card title="Statistiques des Offres" bordered={false} className="dashboard-card">
-                  <Row gutter={[16, 16]}>
-                    <Col span={12}>
-                      <Statistic 
-                        title="Total Offres" 
-                        value={jobOffers.length} 
-                        prefix={<LaptopOutlined />} 
-                        valueStyle={{ color: '#1890ff' }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic 
-                        title="Candidatures" 
-                        value={120} 
-                        prefix={<TeamOutlined />}
-                        valueStyle={{ color: '#52c41a' }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic 
-                        title="Offres Actives" 
-                        value={jobOffers.filter(job => job.status === 'active').length} 
-                        prefix={<CheckCircleOutlined />}
-                        valueStyle={{ color: '#722ed1' }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic 
-                        title="Vues Totales" 
-                        value={1500} 
-                        prefix={<EyeOutlined />}
-                        valueStyle={{ color: '#fa8c16' }}
-                      />
-                    </Col>
-                  </Row>
-                </Card>
-              </Col>
-              <Col xs={24} md={12} lg={8}>
-                <Card title="Statut des Offres" bordered={false} className="dashboard-card">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={jobStatusData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {jobStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Card>
-              </Col>
-              <Col xs={24} lg={12}>
-                <Card title="Candidatures par Mois" bordered={false} className="dashboard-card">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={applicationsData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Area 
-                        type="monotone" 
-                        dataKey="applications" 
-                        stroke="#1890ff" 
-                        fill="#1890ff" 
-                        fillOpacity={0.3} 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </Card>
-              </Col>
-              <Col xs={24} lg={12}>
-                <Card title="Sources des Candidats" bordered={false} className="dashboard-card">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={candidateSourcesData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value" fill="#1890ff" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </Card>
-              </Col>
-            </Row>
-          </div>
-        );
-      case '2':
-        return (
-          <div className="my-jobs-section">
-            <div className="section-header">
-              <Title level={3}>Mes Offres d'Emploi</Title>
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />} 
-                onClick={handlePostJob}
-                size="large"
-              >
-                Publier une nouvelle offre
-              </Button>
-            </div>
-            {renderJobOffers()}
-          </div>
-        );
-      case '3':
-        return (
-          <div className="messages-section">
-            <Title level={3}>Messages</Title>
-            <Card bordered={false}>
-              <Empty description="Aucun message pour le moment" />
-            </Card>
-          </div>
-        );
-      case '4':
-        return (
-          <div className="post-job-section">
-            <Title level={3}>Publier une Offre d'Emploi</Title>
-            <Card bordered={false}>
-              <PostJobForm onJobPosted={handleJobPosted} employerId={user?._id} />
-            </Card>
-          </div>
-        );
-      case '5':
-        return (
-          <div className="saved-candidates-section">
-            <Title level={3}>Candidats Sauvegardés</Title>
-            <Card bordered={false}>
-              <Empty description="Aucun candidat sauvegardé" />
-            </Card>
-          </div>
-        );
-      case '6':
-        return (
-          <div className="subscription-section">
-            <Title level={3}>Abonnement & Facturation</Title>
-            <Card bordered={false}>
-              <Empty description="Aucun abonnement actif" />
-            </Card>
-          </div>
-        );
-      case '7':
-        return (
-          <div className="notifications-section">
-            <Title level={3}>Notifications</Title>
-            <Card bordered={false}>
-              <Empty description="Aucune notification" />
-            </Card>
-          </div>
-        );
-      default:
-        return <Title level={3}>Bienvenue sur votre tableau de bord !</Title>;
-    }
+  const responsiveCardStyle = {
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+    overflow: 'hidden'
   };
+
+  const cardHeadStyle = {
+    fontSize: '1.25rem',
+    fontWeight: 600,
+    color: '#1f2937',
+    borderBottom: '1px solid #e5e7eb',
+    padding: '16px 24px'
+  };
+
+  switch (selectedMenuItem) {
+    case 'dashboard':
+    case '1':
+      const applicationsData = [
+        { month: 'Jan', applications: 35 },
+        { month: 'Feb', applications: 42 },
+        { month: 'Mar', applications: 28 },
+        { month: 'Apr', applications: 45 },
+        { month: 'May', applications: 38 },
+        { month: 'Jun', applications: 50 },
+      ];
+
+      const jobStatusData = [
+        { name: 'Active', value: 8 },
+        { name: 'Closed', value: 3 },
+        { name: 'Draft', value: 2 },
+      ];
+
+      const candidateSourcesData = [
+        { name: 'Direct', value: 40 },
+        { name: 'LinkedIn', value: 30 },
+        { name: 'Indeed', value: 20 },
+        { name: 'Other', value: 10 },
+      ];
+
+        const stats = [
+    {
+      title: "Total Offres",
+      value: jobOffers.length,
+      icon: <LaptopOutlined />,
+      color: '#4361ee',
+      bgColor: 'rgba(67, 97, 238, 0.1)',
+      trend: '+12%',
+      description: 'Total job postings'
+    },
+    {
+      title: "Candidatures",
+      value: 120,
+      icon: <TeamOutlined />,
+      color: '#38b000',
+      bgColor: 'rgba(56, 176, 0, 0.1)',
+      trend: '+23%',
+      description: 'Total candidates'
+    },
+    {
+      title: "Offres Actives",
+      value: jobOffers.filter(job => job.status === 'active').length,
+      icon: <CheckCircleOutlined />,
+      color: '#ff9e00',
+      bgColor: 'rgba(255, 158, 0, 0.1)',
+      trend: '+8%',
+      description: 'Currently active'
+    },
+    {
+      title: "Vues Totales",
+      value: 1500,
+      icon: <EyeOutlined />,
+      color: '#ff0054',
+      bgColor: 'rgba(255, 0, 84, 0.1)',
+      trend: '+45%',
+      description: 'Job views'
+    }
+  ];
+
+
+  const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        padding: '10px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+      }}>
+        <p style={{ margin: 0, fontWeight: 600 }}>{label}</p>
+        <p style={{ margin: 0, color: '#3b82f6' }}>{`${payload[0].name || payload[0].dataKey}: ${payload[0].value}`}</p>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+      return (
+        <div className="dashboard-content">
+          
+        <Row gutter={[16, 16]}>
+        {stats.map((stat, index) => (
+          <Col key={index} xs={24} sm={12} md={8} lg={6}>
+            <div
+              style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '16px',
+          borderLeft: `4px solid ${stat.color}`,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+          height: '100%',
+          position: 'relative',
+          overflow: 'hidden',
+          cursor: 'pointer',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-5px)';
+          e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: '-20px',
+            right: '-20px',
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            background: stat.bgColor,
+            zIndex: 0,
+          }}
+        />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+            }}
+          >
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: stat.bgColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: stat.color,
+                fontSize: '18px',
+              }}
+            >
+              {stat.icon}
+            </div>
+
+            <div
+              style={{
+                background: 'rgba(56, 176, 0, 0.1)',
+                color: stat.color,
+                borderRadius: '20px',
+                padding: '4px 8px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
+              {stat.trend}
+            </div>
+          </div>
+
+          <div style={{ marginTop: '16px' }}>
+            <div
+              style={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: '#1f2937',
+                lineHeight: '1.2',
+              }}
+            >
+              {stat.value}
+            </div>
+            <div
+              style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                marginTop: '4px',
+              }}
+            >
+              {stat.title}
+            </div>
+          </div>
+
+          <div
+            style={{
+              fontSize: '12px',
+              color: '#9ca3af',
+              marginTop: '8px',
+            }}
+          >
+            {stat.description}
+          </div>
+        </div>
+      </div>
+    </Col>
+  ))}
+           
+
+           <Col xs={24} lg={12}>
+  <Card 
+    title="Candidatures par Mois" 
+    bordered={false} 
+    className="dashboard-card"
+    style={{ 
+      borderRadius: '12px', 
+      boxShadow: '0 6px 20px rgba(0,0,0,0.08)', 
+      background: '#ffffff',
+      overflow: 'hidden'
+    }}
+    headStyle={{ 
+      fontSize: '1.2rem', 
+      fontWeight: 600, 
+      color: '#1f2937', 
+      padding: '16px 24px',
+      borderBottom: '1px solid #e5e7eb'
+    }}
+  >
+    <ResponsiveContainer width="100%" height={350}>
+      <AreaChart data={applicationsData} margin={{ top: 20, right: 30, left: 0, bottom: 10 }}>
+        <defs>
+          <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#1890ff" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="#1890ff" stopOpacity={0.1} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <XAxis 
+          dataKey="month" 
+          stroke="#6b7280" 
+          tick={{ fontSize: 12, fill: '#6b7280' }}
+        />
+        <YAxis 
+          stroke="#6b7280" 
+          tick={{ fontSize: 12, fill: '#6b7280' }}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Area 
+          type="monotone" 
+          dataKey="applications" 
+          stroke="#1890ff" 
+          fill="url(#colorUv)" 
+          fillOpacity={1}
+          strokeWidth={2}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  </Card>
+</Col>
+
+<Col xs={24} lg={12}>
+  <Card 
+    title="Sources des Candidats" 
+    bordered={false} 
+    className="dashboard-card"
+    style={{ 
+      borderRadius: '12px', 
+      boxShadow: '0 6px 20px rgba(0,0,0,0.08)', 
+      background: '#ffffff',
+      overflow: 'hidden'
+    }}
+    headStyle={{ 
+      fontSize: '1.2rem', 
+      fontWeight: 600, 
+      color: '#1f2937', 
+      padding: '16px 24px',
+      borderBottom: '1px solid #e5e7eb'
+    }}
+  >
+    <ResponsiveContainer width="100%" height={350}>
+      <BarChart data={candidateSourcesData} margin={{ top: 20, right: 30, left: 0, bottom: 10 }}>
+        <defs>
+          <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#1890ff" stopOpacity={0.9} />
+            <stop offset="95%" stopColor="#1890ff" stopOpacity={0.3} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <XAxis 
+          dataKey="name" 
+          stroke="#6b7280" 
+          tick={{ fontSize: 12, fill: '#6b7280' }}
+        />
+        <YAxis 
+          stroke="#6b7280" 
+          tick={{ fontSize: 12, fill: '#6b7280' }}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Bar 
+          dataKey="value" 
+          fill="url(#colorBar)" 
+          barSize={40} 
+          radius={[8, 8, 0, 0]}
+          animationDuration={1000}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  </Card>
+</Col>
+
+          </Row>
+        </div>
+      );
+
+    case '2':
+      return (
+        <div className="my-jobs-section">
+          <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Title level={3}>Mes Offres d'Emploi</Title>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handlePostJob} size="large">Publier une nouvelle offre</Button>
+          </div>
+          {renderJobOffers()}
+        </div>
+      );
+
+    case '3':
+      return (
+        <div className="messages-section">
+          <Title level={3}>Messages</Title>
+          <Card bordered={false}><Empty description="Aucun message pour le moment" /></Card>
+        </div>
+      );
+
+    case '4':
+      return (
+        <div className="post-job-section">
+          <Title level={3}>Publier une Offre d'Emploi</Title>
+          <Card bordered={false}><PostJobForm onJobPosted={handleJobPosted} employerId={user?._id} /></Card>
+        </div>
+      );
+
+    case '5':
+      return (
+        <div className="saved-candidates-section">
+          <Title level={3}>Candidats Sauvegardés</Title>
+          <Card bordered={false}><Empty description="Aucun candidat sauvegardé" /></Card>
+        </div>
+      );
+
+    case '6':
+      return (
+       <div className="subscription-section">
+  <Title level={3}>Abonnement & Facturation</Title>
+  <Row gutter={[24, 24]} style={{ padding: '24px 0' }}>
+    <Col xs={24} sm={12} md={6}>
+      <Card 
+        bordered={false} 
+        style={{ 
+          borderRadius: '12px', 
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)', 
+          textAlign: 'center', 
+          padding: '20px', 
+          background: '#ffffff',
+          border: '1px solid #e5e7eb'
+        }}
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <span style={{ color: '#3b82f6', fontSize: '14px', fontWeight: 500 }}>Free Lite</span>
+          <p style={{ color: '#6b7280', fontSize: '12px' }}>It's totally free</p>
+        </div>
+        <h3 style={{ color: '#1f2937', fontSize: '32px', fontWeight: 700, margin: '8px 0' }}>$0</h3>
+        <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>One time Payment</p>
+        <Button type="primary" style={{ background: '#3b82f6', borderColor: '#3b82f6', width: '100%', marginBottom: '24px' }} disabled>
+          Current Plan
+        </Button>
+        <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left' }}>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Up to 1 User</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> All UI components</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Lifetime access</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Free updates</li>
+          <li style={{ color: '#ef4444', marginBottom: '8px' }}><CloseOutlined /> Community Support</li>
+          <li style={{ color: '#ef4444', marginBottom: '8px' }}><CloseOutlined /> Downloadable Files</li>
+        </ul>
+      </Card>
+    </Col>
+    <Col xs={24} sm={12} md={6}>
+      <Card 
+        bordered={false} 
+        style={{ 
+          borderRadius: '12px', 
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)', 
+          textAlign: 'center', 
+          padding: '20px', 
+          background: '#ffffff',
+          border: '1px solid #e5e7eb'
+        }}
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <span style={{ color: '#3b82f6', fontSize: '14px', fontWeight: 500 }}>Starter</span>
+          <p style={{ color: '#6b7280', fontSize: '12px' }}>Single Site</p>
+          <RocketOutlined style={{ fontSize: '24px', color: '#3b82f6', marginTop: '8px' }} />
+        </div>
+        <h3 style={{ color: '#1f2937', fontSize: '32px', fontWeight: 700, margin: '8px 0' }}>$39-$29</h3>
+        <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>One time Payment</p>
+        <Button type="primary" style={{ background: '#1f2937', borderColor: '#1f2937', width: '100%', marginBottom: '24px' }}>
+          Get the plan
+        </Button>
+        <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left' }}>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Up to 5 Users</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> All UI components</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Lifetime access</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Free updates</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Community Support</li>
+          <li style={{ color: '#ef4444', marginBottom: '8px' }}><CloseOutlined /> Downloadable Files</li>
+        </ul>
+      </Card>
+    </Col>
+    <Col xs={24} sm={12} md={6}>
+      <Card 
+        bordered={false} 
+        style={{ 
+          borderRadius: '12px', 
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)', 
+          textAlign: 'center', 
+          padding: '20px', 
+          background: '#ffffff',
+          border: '1px solid #e5e7eb'
+        }}
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <span style={{ color: '#3b82f6', fontSize: '14px', fontWeight: 500 }}>Business</span>
+          <p style={{ color: '#6b7280', fontSize: '12px' }}>Unlimited sites</p>
+          <SyncOutlined style={{ fontSize: '24px', color: '#3b82f6', marginTop: '8px' }} />
+        </div>
+        <h3 style={{ color: '#1f2937', fontSize: '32px', fontWeight: 700, margin: '8px 0' }}>$99-$59</h3>
+        <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>One time Payment</p>
+        <Button type="primary" style={{ background: '#1f2937', borderColor: '#1f2937', width: '100%', marginBottom: '24px' }}>
+          Get the plan
+        </Button>
+        <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left' }}>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Up to 10 Users</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> All UI components</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Lifetime access</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Free updates</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Community Support</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Downloadable Files</li>
+        </ul>
+      </Card>
+    </Col>
+    <Col xs={24} sm={12} md={6}>
+      <Card 
+        bordered={false} 
+        style={{ 
+          borderRadius: '12px', 
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)', 
+          textAlign: 'center', 
+          padding: '20px', 
+          background: '#ffffff',
+          border: '1px solid #e5e7eb'
+        }}
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <span style={{ color: '#3b82f6', fontSize: '14px', fontWeight: 500 }}>Extended</span>
+          <p style={{ color: '#6b7280', fontSize: '12px' }}>For paying users</p>
+          <ShoppingCartOutlined style={{ fontSize: '24px', color: '#3b82f6', marginTop: '8px' }} />
+        </div>
+        <h3 style={{ color: '#1f2937', fontSize: '32px', fontWeight: 700, margin: '8px 0' }}>$259-$189</h3>
+        <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>One time Payment</p>
+        <Button type="primary" style={{ background: '#1f2937', borderColor: '#1f2937', width: '100%', marginBottom: '24px' }}>
+          Get the plan
+        </Button>
+        <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left' }}>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Up to 50 Users</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> All UI components</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Lifetime access</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Free updates</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Community Support</li>
+          <li style={{ color: '#10b981', marginBottom: '8px' }}><CheckOutlined /> Downloadable Files</li>
+        </ul>
+      </Card>
+    </Col>
+  </Row>
+</div>
+      );
+
+    case '7':
+      return (
+        <div className="notifications-section">
+          <Title level={3}>Notifications</Title>
+          <Card bordered={false}><Empty description="Aucune notification" /></Card>
+        </div>
+      );
+
+    default:
+      return <Title level={3}>Bienvenue sur votre tableau de bord !</Title>;
+  }
+};
+
 
   if (loading) {
     return (
@@ -554,6 +915,10 @@ function EmployerDashboard() {
     return <Empty description="Impossible de charger le profil utilisateur. Veuillez vous reconnecter." />;
   }
 
+
+
+
+  
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider
@@ -568,7 +933,7 @@ function EmployerDashboard() {
           }
         }}
         className="dashboard-sider"
-        width={200}
+        width={250}
       >
         {renderSidebar()}
       </Sider>
@@ -604,7 +969,7 @@ function EmployerDashboard() {
         {renderSidebar()}
       </Drawer>
 
-      <Modal
+      {/* <Modal
         title="Publier une nouvelle offre d'emploi"
         open={isPostJobModalVisible}
         onCancel={() => setIsPostJobModalVisible(false)}
@@ -613,7 +978,7 @@ function EmployerDashboard() {
         className="post-job-modal"
       >
         <PostJobForm onJobPosted={handleJobPosted} employerId={user?._id} />
-      </Modal>
+      </Modal> */}
 
       <Modal
         title="Mettre à jour le profil employeur"

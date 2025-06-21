@@ -74,8 +74,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import InboxIcon from "@mui/icons-material/Inbox";
 import CloseIcon from '@mui/icons-material/Close';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-
-
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 
 
@@ -1325,132 +1324,67 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
 
                 {/* Social Links */}
                 <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    borderRadius: 4,
-                    bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
-                    border: '1px solid',
-                    borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: darkMode ? '#fff' : '#1a1a1a' }}>
-                      Liens Sociaux
-                    </Typography>
-                    <Button 
-                      size="small" 
-                      startIcon={<AddIcon />} 
-                      sx={{ 
-                        color: '#1976d2',
-                        fontWeight: 500,
-                        textTransform: 'none'
-                      }}
-                    >
-                      Ajouter
-                    </Button>
-                  </Stack>
-                  <Divider sx={{ my: 2, borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08) }} />
-                  <Stack direction="row" spacing={2} justifyContent="center">
-                    <Tooltip title="LinkedIn">
-                      <IconButton 
-                        sx={{ 
-                          color: '#0a66c2',
-                          '&:hover': { bgcolor: alpha('#0a66c2', 0.1) }
-                        }}
-                      >
-                        <LinkedInIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="GitHub">
-                      <IconButton 
-                        sx={{ 
-                          color: '#181717',
-                          '&:hover': { bgcolor: alpha('#181717', 0.1) }
-                        }}
-                      >
-                        <GitHubIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Instagram">
-                      <IconButton 
-                        sx={{ 
-                          color: '#E4405F',
-                          '&:hover': { bgcolor: alpha('#E4405F', 0.1) }
-                        }}
-                      >
-                        <InstagramIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Twitter">
-                      <IconButton 
-                        sx={{ 
-                          color: '#1DA1F2',
-                          '&:hover': { bgcolor: alpha('#1DA1F2', 0.1) }
-                        }}
-                      >
-                        <TwitterIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                </Paper>
+  elevation={0}
+  sx={{
+    p: 3,
+    borderRadius: 4,
+    bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
+    border: '1px solid',
+    borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
+    transition: 'all 0.3s ease'
+  }}
+>
+  <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+    <Typography variant="h6" sx={{ fontWeight: 600, color: darkMode ? '#fff' : '#1a1a1a' }}>
+      Liens Sociaux
+    </Typography>
+    <Button 
+      size="small" 
+      startIcon={<AddIcon />} 
+      sx={{ 
+        color: '#1976d2',
+        fontWeight: 500,
+        textTransform: 'none'
+      }}
+    >
+      Ajouter
+    </Button>
+  </Stack>
+  <Divider sx={{ my: 2, borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08) }} />
 
-                
+  <Stack direction="row" spacing={2} justifyContent="center">
+    <Tooltip title="LinkedIn">
+      <a href="https://www.linkedin.com/in/ton-profil" target="_blank" rel="noopener noreferrer">
+        <IconButton sx={{ color: '#0a66c2', '&:hover': { bgcolor: alpha('#0a66c2', 0.1) } }}>
+          <LinkedInIcon />
+        </IconButton>
+      </a>
+    </Tooltip>
+    <Tooltip title="GitHub">
+      <a href="https://github.com" target="_blank" rel="noopener noreferrer">
+        <IconButton sx={{ color: '#181717', '&:hover': { bgcolor: alpha('#181717', 0.1) } }}>
+          <GitHubIcon />
+        </IconButton>
+      </a>
+    </Tooltip>
+    <Tooltip title="Instagram">
+      <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">
+        <IconButton sx={{ color: '#E4405F', '&:hover': { bgcolor: alpha('#E4405F', 0.1) } }}>
+          <InstagramIcon />
+        </IconButton>
+      </a>
+    </Tooltip>
+    <Tooltip title="Twitter">
+      <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+        <IconButton sx={{ color: '#1DA1F2', '&:hover': { bgcolor: alpha('#1DA1F2', 0.1) } }}>
+          <TwitterIcon />
+        </IconButton>
+      </a>
+    </Tooltip>
+  </Stack>
+</Paper>
 
-                {/* Input caché pour l'upload de CV */}
-                {/* <input
-                  type="file"
-                  ref={cvFileInputRef}
-                  onChange={handleCvFileChange}
-                  accept=".pdf,.doc,.docx"
-                  style={{ display: 'none' }}
-                /> */}
 
-                {/* Menu pour les actions du CV - uniquement visible si un CV existe */}
-                {/* {userData?.cv && userData.cv.length > 0 && (
-                  <Menu
-                    anchorEl={cvMenuAnchor}
-                    open={Boolean(cvMenuAnchor)}
-                    onClose={handleCvMenuClose}
-                    TransitionComponent={Fade}
-                    PaperProps={{
-                      elevation: 0,
-                      sx: {
-                        mt: 1.5,
-                        borderRadius: 3,
-                        bgcolor: darkMode ? alpha('#fff', 0.08) : '#fff',
-                        backdropFilter: 'blur(12px)',
-                        border: '1px solid',
-                        borderColor: darkMode ? alpha('#fff', 0.12) : alpha('#000', 0.08),
-                        boxShadow: '0 8px 40px rgba(0,0,0,0.1)',
-                        '& .MuiMenuItem-root': {
-                          px: 3,
-                          py: 1.5,
-                          color: darkMode ? '#e0e0e0' : '#4a4a4a',
-                          '&:hover': {
-                            bgcolor: darkMode ? alpha('#1976d2', 0.2) : alpha('#1976d2', 0.1)
-                          }
-                        }
-                      }
-                    }}
-                  >
-                    <MenuItem onClick={() => {
-                      handleCvMenuClose();
-                      cvFileInputRef.current?.click();
-                    }}>
-                      <EditIcon sx={{ mr: 2, color: '#1976d2' }} />
-                      Changer le CV
-                    </MenuItem>
-                    <MenuItem onClick={() => {
-                      handleCvMenuClose();
-                      cvFileInputRef.current?.click();
-                    }}>
-                      <AddIcon sx={{ mr: 2, color: '#1976d2' }} />
-                      Ajouter un CV
-                    </MenuItem>
-                  </Menu>
-                )} */}
 
                 {/* Contact Information */}
                 <Paper
@@ -1533,42 +1467,43 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
               <Stack spacing={4}>
              
 <Paper 
-  elevation={3} 
+  elevation={4} 
   sx={{ 
-    padding: 3,
-    marginTop: 3,
-    borderRadius: 3,
-    background: 'linear-gradient(to bottom, #f9fbfd, #ffffff)'
+    padding: 4,
+    marginTop: 4,
+    borderRadius: 4,
+    background: 'linear-gradient(135deg, #ffffff, #f0f4f8)'
   }}
 >
   <Typography 
-    variant="h5" 
+    variant="h4" 
     gutterBottom 
     sx={{ 
-      fontWeight: 600,
-      color: '#2c3e50',
+      fontWeight: 700,
+      color: '#1a2b3c',
       display: 'flex',
       alignItems: 'center',
-      gap: 1
+      gap: 1.5,
+      letterSpacing: '0.5px'
     }}
   >
-    <DescriptionIcon fontSize="medium" />
+    <DescriptionIcon fontSize="large" sx={{ color: '#3b82f6' }} />
     Mes Candidatures
   </Typography>
 
   <Box sx={{ 
     display: 'flex', 
-    gap: 1, 
-    mb: 3,
+    gap: 1.5, 
+    mb: 4,
     flexWrap: 'wrap',
     '& .MuiButton-root': {
-      borderRadius: 20,
+      borderRadius: 30,
       textTransform: 'none',
-      fontWeight: 500,
-      px: 2.5,
-      py: 1,
-      transition: 'all 0.3s ease',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      fontWeight: 600,
+      px: 3,
+      py: 1.2,
+      transition: 'all 0.2s ease',
+      boxShadow: '0 3px 6px rgba(0,0,0,0.12)'
     }
   }}>
     {["all", "accepted", "pending", "rejected"].map((status) => (
@@ -1590,7 +1525,8 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
           borderWidth: 2,
           '&:hover': {
             borderWidth: 2,
-            transform: 'translateY(-2px)'
+            transform: 'translateY(-3px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
           }
         }}
       >
@@ -1604,87 +1540,100 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
   {filteredOffers.length > 0 ? (
     <List sx={{ py: 0 }}>
       {filteredOffers.map((offer) => {
-        const statusColor = offer.status === 'accepted' ? '#4caf50' : 
-                          offer.status === 'pending' ? '#ff9800' : 
-                          offer.status === 'rejected' ? '#f44336' : '#9e9e9e';
-        
+        const statusColor = offer.status === 'accepted' ? '#22c55e' : 
+                            offer.status === 'pending' ? '#f59e0b' : 
+                            offer.status === 'rejected' ? '#ef4444' : '#6b7280';
+
         return (
-          <ListItem 
-            key={offer._id} 
+          <Paper
+            key={offer._id}
+            elevation={3}
             sx={{
-              py: 2,
-              px: 3,
-              mb: 1.5,
-              borderRadius: 2,
-              borderLeft: `4px solid ${statusColor}`,
-              boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-              transition: 'all 0.3s ease',
+              mb: 2.5,
+              p: 3.5,
+              borderRadius: 4,
+              borderLeft: `8px solid ${statusColor}`,
+              backgroundColor: '#ffffff',
+              transition: 'all 0.2s ease',
               '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.08)',
+                transform: 'translateY(-3px)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
                 backgroundColor: '#f8fafc'
               }
             }}
           >
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              width: '100%',
-              gap: 2
-            }}>
-              <Box sx={{
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                backgroundColor: statusColor,
-                flexShrink: 0
-              }} />
-              
-              <ListItemText
-                primary={
-                  <Typography variant="subtitle1" fontWeight={500}>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box display="flex" gap={2.5} alignItems="center">
+                <WorkIcon sx={{ color: '#2563eb', fontSize: 28 }} />
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#1f2937' }}>
                     {offer.title}
                   </Typography>
-                }
-                secondary={
-                  <Typography variant="body2" color="text.secondary">
-                    {offer.company || "Entreprise non spécifiée"}
-                  </Typography>
-                }
-                sx={{ m: 0 }}
-              />
-              
+                  <Box display="flex" alignItems="center" gap={1.2}>
+                    <BusinessIcon fontSize="small" sx={{ color: '#4b5563' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {offer.company || "Entreprise non spécifiée"}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+
               <Chip
                 label={offer.status.charAt(0).toUpperCase() + offer.status.slice(1)}
-                size="small"
+                size="medium"
                 sx={{
-                  fontWeight: 500,
-                  backgroundColor: `${statusColor}10`,
+                  fontWeight: 600,
+                  backgroundColor: `${statusColor}15`,
                   color: statusColor,
-                  border: `1px solid ${statusColor}30`
+                  border: `1px solid ${statusColor}40`,
+                  borderRadius: 2
                 }}
               />
             </Box>
-          </ListItem>
-        )
+
+            <Box display="flex" justifyContent="flex-end" mt={2.5}>
+              <Button
+                variant="outlined"
+                startIcon={<VisibilityIcon />}
+                size="medium"
+                onClick={() => navigate(`/offers/${offer._id}`)}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: 30,
+                  px: 2.5,
+                  py: 0.8,
+                  borderColor: '#3b82f6',
+                  color: '#3b82f6',
+                  '&:hover': {
+                    backgroundColor: '#3b82f605',
+                    borderColor: '#2563eb'
+                  }
+                }}
+              >
+                Voir l’offre
+              </Button>
+            </Box>
+          </Paper>
+        );
       })}
     </List>
   ) : (
     <Box sx={{ 
       textAlign: 'center', 
-      py: 6,
-      border: '1px dashed #e0e0e0',
-      borderRadius: 2,
-      backgroundColor: '#fafafa'
+      py: 8,
+      border: '2px dashed #d1d5db',
+      borderRadius: 3,
+      backgroundColor: '#f9fafb'
     }}>
-      <InboxIcon sx={{ fontSize: 48, color: '#bdbdbd', mb: 1 }} />
-      <Typography variant="body1" color="textSecondary">
+      <InboxIcon sx={{ fontSize: 56, color: '#9ca3af', mb: 1.5 }} />
+      <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
         Aucune candidature trouvée pour ce statut
       </Typography>
       <Button 
         variant="text" 
         color="primary" 
-        sx={{ mt: 1.5 }}
+        sx={{ mt: 2, fontWeight: 600, textTransform: 'none' }}
         onClick={() => setFilter('all')}
       >
         Voir toutes les candidatures
