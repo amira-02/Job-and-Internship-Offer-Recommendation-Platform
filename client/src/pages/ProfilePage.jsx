@@ -76,6 +76,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 
+import CancelIcon from '@mui/icons-material/Cancel';
 
 
 import AssessmentIcon from '@mui/icons-material/Assessment';
@@ -100,6 +101,7 @@ const ProfilePage = () => {
     name: '',
     level: ''
   });
+
 
   // Nouvel état pour la modale de certification
   const [openCertificationModal, setOpenCertificationModal] = useState(false);
@@ -781,39 +783,82 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
 //   }
 // };
 
+const [offers, setOffers] = useState([]);
+const [filter, setFilter] = useState("all");
+const [filteredOffers, setFilteredOffers] = useState([]);
+// const [userData, setUserData] = useState(null); // already declared by you
 
+// Get user from localStorage safely
+useEffect(() => {
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    try {
+      setUserData(JSON.parse(storedUser));
+    } catch (e) {
+      console.error("Erreur JSON:", e);
+    }
+  }
+}, []);
 
- const [offers, setOffers] = useState([]);
-  const [filter, setFilter] = useState("all");
-
-  useEffect(() => {
-    const fetchAppliedOffers = async () => {
-      try {
-        const res = await axios.get("http://localhost:3000/api/joboffers/user/applied", {
-          withCredentials: true,
-        });
-        setOffers(res.data);
-      } catch (err) {
-        console.error("Erreur lors du chargement des offres :", err);
-      }
-    };
-
-    fetchAppliedOffers();
-  }, []);
-
-  const getStatusIcon = (status, isActive) => {
-    const size = isActive ? "medium" : "small";
-    if (status === "accepted") return <CheckCircleOutline fontSize={size} />;
-    if (status === "pending") return <HourglassEmpty fontSize={size} />;
-    if (status === "rejected") return <Cancel fontSize={size} />;
-    return <HelpOutline fontSize={size} />;
+// Fetch applied offers
+useEffect(() => {
+  const fetchAppliedOffers = async () => {
+    try {
+      const res = await axios.get("http://localhost:3000/api/joboffers/user/applied", {
+        withCredentials: true,
+      });
+      setOffers(res.data);
+    } catch (err) {
+      console.error("Erreur lors du chargement des offres :", err);
+    }
   };
 
-  const filteredOffers = filter === "all"
-    ? offers
-    : offers.filter((offer) => offer.status.toLowerCase() === filter.toLowerCase());
+  fetchAppliedOffers();
+}, []);
 
+// Filter offers by status
+useEffect(() => {
+  if (filter === "all") {
+    setFilteredOffers(offers);
+  } else {
+    setFilteredOffers(
+      offers.filter((app) => app.status.toLowerCase() === filter.toLowerCase())
+    );
+  }
+}, [filter, offers]);
 
+// Status icon
+const getStatusIcon = (status, isActive) => {
+  const size = isActive ? "medium" : "small";
+  if (status === "accepted") return <CheckCircleOutline fontSize={size} />;
+  if (status === "pending") return <HourglassEmpty fontSize={size} />;
+  if (status === "rejected") return <Cancel fontSize={size} />;
+  if (status === "canceled") return <Cancel fontSize={size} color="error" />;
+  return <HelpOutline fontSize={size} />;
+};
+
+// Cancel application handler
+const handleCancelApplication = async (offerId) => {
+  if (!userData?._id) {
+    console.error("Utilisateur non défini");
+    return;
+  }
+
+  try {
+    await axios.patch(
+  `http://localhost:3000/api/joboffers/users/${userData._id}/applied-offers/${offerId}/cancel`
+);
+
+    
+    setFilteredOffers((prev) =>
+      prev.map((app) =>
+        app._id === offerId ? { ...app, status: "canceled" } : app
+      )
+    );
+  } catch (error) {
+    console.error("Erreur lors de l'annulation :", error);
+  }
+};
 
 
 
@@ -1491,6 +1536,7 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
     Mes Candidatures
   </Typography>
 
+  {/* Boutons de filtre */}
   <Box sx={{ 
     display: 'flex', 
     gap: 1.5, 
@@ -1506,18 +1552,15 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
       boxShadow: '0 3px 6px rgba(0,0,0,0.12)'
     }
   }}>
-    {["all", "accepted", "pending", "rejected"].map((status) => (
+    {["all", "accepted", "pending", "rejected", "canceled"].map((status) => (
       <Button
         key={status}
         variant={filter === status ? "contained" : "outlined"}
         color={
-          status === "accepted"
-            ? "success"
-            : status === "pending"
-            ? "warning"
-            : status === "rejected"
-            ? "error"
-            : "primary"
+          status === "accepted" ? "success" :
+          status === "pending" ? "warning" :
+          status === "rejected" ? "error" :
+          status === "canceled" ? "info" : "primary"
         }
         onClick={() => setFilter(status)}
         startIcon={getStatusIcon(status, filter === status)}
@@ -1537,12 +1580,15 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
     ))}
   </Box>
 
+  {/* Liste des candidatures */}
   {filteredOffers.length > 0 ? (
     <List sx={{ py: 0 }}>
       {filteredOffers.map((offer) => {
-        const statusColor = offer.status === 'accepted' ? '#22c55e' : 
-                            offer.status === 'pending' ? '#f59e0b' : 
-                            offer.status === 'rejected' ? '#ef4444' : '#6b7280';
+        const statusColor = 
+          offer.status === 'accepted' ? '#22c55e' :
+          offer.status === 'pending' ? '#f59e0b' :
+          offer.status === 'rejected' ? '#ef4444' :
+          offer.status === 'canceled' ? '#3b82f6' : '#6b7280';
 
         return (
           <Paper
@@ -1591,7 +1637,7 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
               />
             </Box>
 
-            <Box display="flex" justifyContent="flex-end" mt={2.5}>
+            <Box display="flex" justifyContent="flex-end" mt={2.5} gap={1.5}>
               <Button
                 variant="outlined"
                 startIcon={<VisibilityIcon />}
@@ -1613,6 +1659,31 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
               >
                 Voir l’offre
               </Button>
+
+              {offer.status === 'pending' && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<CancelIcon />}
+                  size="medium"
+                  onClick={() => handleCancelApplication(offer._id)}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderRadius: 30,
+                    px: 2.5,
+                    py: 0.8,
+                    borderColor: '#ef4444',
+                    color: '#ef4444',
+                    '&:hover': {
+                      backgroundColor: '#fee2e2',
+                      borderColor: '#dc2626'
+                    }
+                  }}
+                >
+                  Annuler
+                </Button>
+              )}
             </Box>
           </Paper>
         );
@@ -1641,6 +1712,7 @@ const handleOpenCvAnalysis = async (cvIndex = 0) => {
     </Box>
   )}
 </Paper>
+
 
  
 

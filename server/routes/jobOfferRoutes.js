@@ -23,6 +23,7 @@ router.post('/:id/apply', jobOfferController.applyToJobOffer);
 router.get('/:id/candidates', jobOfferController.getOfferCandidates);
 router.post('/:id/decision', jobOfferController.handleCandidateDecision);
 
+router.patch("/users/:userId/applied-offers/:offerId/cancel", jobOfferController.cancelApplication);
 
 
 // router.get('/:id/analyze-candidates', jobOfferController.analyzeCandidates);

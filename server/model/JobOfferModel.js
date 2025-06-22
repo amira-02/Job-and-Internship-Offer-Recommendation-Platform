@@ -56,7 +56,7 @@ const jobOfferSchema = new mongoose.Schema({
   },
   sourceUrl: {
     type: String,
-    unique: true,
+    // unique: true,
     sparse: true  // Permet les valeurs null
   },
   status: {

@@ -193,10 +193,18 @@ const handleAnalyzeCandidates = async () => {
         <>
           <Row gutter={[24, 24]}>
             {candidates.map((candidate) => {
-              const statusColor = candidate.status === 'accepted' ? 'green' : 
-                                candidate.status === 'rejected' ? 'red' : 'geekblue';
-              const statusText = candidate.status === 'accepted' ? 'Accepté' : 
-                                candidate.status === 'rejected' ? 'Refusé' : 'En attente';
+            const application = candidate.appliedOffers?.find(app => app._id === id); // `id` est l'id de l'offre
+
+    const status = application?.status || 'pending'; // default fallback
+    const statusColor = status === 'accepted' ? 'green'
+                      : status === 'rejected' ? 'red'
+                      : status === 'canceled' ? 'gray'
+                      : 'geekblue';
+
+    const statusText = status === 'accepted' ? 'Accepté'
+                      : status === 'rejected' ? 'Refusé'
+                      : status === 'canceled' ? 'Annulé'
+                      : 'En attente';
               
               return (
                 <Col xs={24} sm={24} md={12} lg={8} xl={8} key={candidate._id}>
@@ -380,7 +388,6 @@ const handleAnalyzeCandidates = async () => {
   <>
     <Divider />
     <Typography.Title level={3}>📊 Rapport d'analyse des candidats</Typography.Title>
-
     {analyses.map((a) => (
       <Card key={a.candidateId} title={`${a.candidateName} (Score: ${a.averageScore}/10)`} style={{ marginBottom: 16 }}>
         {a.rawAnalyses.length > 0 ? (

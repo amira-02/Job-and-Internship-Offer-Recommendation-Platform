@@ -290,15 +290,34 @@ exports.deleteJobOffer = async (req, res) => {
   }
 }; 
 
+// controllers/jobOfferController.js
+
 exports.getOfferCandidates = async (req, res) => {
   try {
-    const offer = await JobOffer.findById(req.params.id).populate('candidates');
+    const offerId = req.params.id;
+
+    const offer = await JobOffer.findById(offerId).populate('candidates');
     if (!offer) return res.status(404).json({ message: 'Offre non trouvée' });
-    res.json({ candidates: offer.candidates });
+
+    const enrichedCandidates = offer.candidates.map(candidate => {
+      // Cherche l'objet de cette offre dans les candidatures du candidat
+      const application = candidate.appliedOffers.find(app =>
+        app._id?.toString() === offerId
+      );
+
+      return {
+        ...candidate.toObject(),
+        status: application?.status || 'pending', // défaut
+      };
+    });
+
+    res.json({ candidates: enrichedCandidates });
   } catch (err) {
+    console.error("Erreur dans getOfferCandidates :", err);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
+
 
 
 exports.handleCandidateDecision = async (req, res) => {
@@ -396,32 +415,6 @@ exports.getUserAppliedOffers = async (req, res) => {
 
 
 
-// exports.getRecommendations = async (req, res) => {
-//   try {
-//     const { analysis } = req.body;
-//     if (!analysis) return res.status(400).json({ error: 'Missing CV analysis' });
-
-//     const offers = await JobOffer.find();
-
-//     const prompt = `
-// Tu es un assistant de recrutement. Voici le CV résumé :
-// """
-// ${analysis}
-// """
-// Voici les offres d'emploi disponibles :
-// ${offers.map((offer, i) => `\nOffre ${i + 1}:\nTitre: ${offer.jobTitle}\nDescription: ${offer.jobDescription}`).join('\n')}
-
-// Donne-moi les 3 offres les plus compatibles avec ce CV et explique pourquoi.
-// `;
-
-//     const response = await LlamaService.runPrompt(prompt);
-
-//     res.json({ recommendations: response });
-//   } catch (error) {
-//     console.error('Erreur dans getRecommendations:', error);
-//     res.status(500).json({ error: 'Erreur serveur lors de la recommandation' });
-//   }
-// };
 exports.getRecommendations = async (req, res) => {
   try {
     const { analysis } = req.body;
@@ -438,4 +431,35 @@ exports.getRecommendations = async (req, res) => {
   }
 };
 
+exports.cancelApplication = async (req, res) => {
+  const { userId, offerId } = req.params;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    }
+
+    if (!Array.isArray(user.appliedOffers)) {
+      return res.status(400).json({ error: "L'utilisateur n'a pas de candidatures" });
+    }
+
+   const offer = user.appliedOffers.find(
+  (offer) => offer._id && offer._id.toString() === offerId
+);
+
+
+    if (!offer) {
+      return res.status(404).json({ error: "Offre non trouvée dans les candidatures" });
+    }
+
+    offer.status = "canceled";
+    await user.save();
+
+    res.json({ message: "Candidature annulée avec succès", offer });
+  } catch (error) {
+    console.error("Erreur dans cancelApplication :", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
 
