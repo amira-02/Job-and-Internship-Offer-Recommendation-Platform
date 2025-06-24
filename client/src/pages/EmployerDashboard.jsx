@@ -27,7 +27,13 @@ import {
   HeartOutlined,
   DollarCircleOutlined,
   BarChartOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+   MoneyCollectOutlined,
+  RiseOutlined,
+  AuditOutlined,
+  AppstoreOutlined,
+  ClockCircleOutlined,
+  // EnvironmentOutlined
 } from '@ant-design/icons';
 // import { Row, Col, Card, Button, Title } from 'antd';
 import { CheckOutlined, RocketOutlined, SyncOutlined, ShoppingCartOutlined } from '@ant-design/icons';
@@ -314,97 +320,335 @@ const renderJobOffers = () => {
       />
     );
   }
-
+const getDaysAgo = (dateString) => {
+    const createdDate = new Date(dateString);
+    const currentDate = new Date();
+    const diffTime = Math.abs(currentDate - createdDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays;
+  };
   return (
     <Row gutter={[24, 24]}>
-  {jobOffers.map(offer => (
-    <Col xs={24} sm={12} md={8} key={offer._id}>
-      <Card
-        hoverable
-        style={{
-          borderRadius: '20px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-          padding: 16,
-          border: '1px solid #f0f0f0',
-        }}
-        bodyStyle={{ padding: 20 }}
-      >
-        <div style={{ marginBottom: 16 }}>
-          <Typography.Title level={4} style={{ margin: 0, color: '#1e293b' }}>
-            {offer.jobTitle}
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            {offer.address}, {offer.country}
-          </Typography.Text>
-        </div>
+      {jobOffers.map((offer) => {
+        const statusColor = offer.Offerstatus === 'active' 
+          ? 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' 
+          : offer.Offerstatus === 'expired' 
+          ? 'linear-gradient(90deg, #ef4444 0%, #f87171 100%)' 
+          : 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)';
+        
+        const statusLabel = offer.Offerstatus === 'active' 
+          ? 'Active' 
+          : offer.Offerstatus === 'expired' 
+          ? 'Expired' 
+          : 'Draft';
 
-        <Space direction="vertical" size={12} style={{ width: '100%' }}>
-          <Space>
-            <Tag color="blue">{offer.jobCategory}</Tag>
-            <Tag color="green">{offer.jobType}</Tag>
-          </Space>
+        // Generate company initials for logo
+        const companyName = offer.jobTitle || 'Company';
+        const initials = companyName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        
+        return (
+          <Col xs={24} sm={12} md={8} key={offer._id}>
+            <Card
+              hoverable
+              style={{
+                borderRadius: '20px',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08)',
+                overflow: 'hidden',
+                transition: 'all 0.3s ease',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+              bodyStyle={{ padding: 0 }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-8px)';
+                e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.08)';
+              }}
+            >
+              {/* Card Header with Status Badge */}
+              <div style={{
+                padding: '25px',
+                position: 'relative',
+                background: 'linear-gradient(90deg, #f0f9ff 0%, #f8fafc 100%)',
+                borderBottom: '1px solid #f1f5f9'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  padding: '6px 18px',
+                  borderRadius: '20px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                  background: statusColor,
+                  color: 'white'
+                }}>
+                  {statusLabel}
+                </div>
+                
+                <Title level={4} style={{
+                  margin: 0,
+                  color: '#1e293b',
+                  fontWeight: 600,
+                  paddingRight: '100px',
+                  marginBottom: '8px'
+                }}>
+                  {offer.title}
+                </Title>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '15px' }}>
+                  <div style={{
+                    width: '50px',
+                    height: '50px',
+                    background: 'linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#3b82f6',
+                    fontSize: '1.2rem',
+                    fontWeight: '600'
+                  }}>
+                    {initials}
+                  </div>
+                  <div>
+                    <Text strong style={{ display: 'block', color: '#1e293b', marginBottom: '4px' }}>
+                      {companyName}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <EnvironmentOutlined /> {offer.address}, {offer.country}
+                    </Text>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Card Content */}
+              <div style={{ padding: '25px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '20px',
+                  marginBottom: '25px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      color: '#10b981'
+                    }}>
+                      <MoneyCollectOutlined />
+                    </div>
+                    <div>
+                      <Text type="secondary" style={{ fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>
+                        Salaire
+                      </Text>
+                      <Text strong style={{ color: '#10b981', fontWeight: 600 }}>
+                        {offer.minSalary} - {offer.maxSalary} {offer.salaryPeriod}
+                      </Text>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      color: '#8b5cf6'
+                    }}>
+                      <RiseOutlined />
+                    </div>
+                    <div>
+                      <Text type="secondary" style={{ fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>
+                        Expérience
+                      </Text>
+                      <Text strong style={{ color: '#1e293b' }}>
+                        {offer.experienceLevel}
+                      </Text>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      color: '#3b82f6'
+                    }}>
+                      <AuditOutlined />
+                    </div>
+                    <div>
+                      <Text type="secondary" style={{ fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>
+                        Type
+                      </Text>
+                      <Text strong style={{ color: '#1e293b' }}>
+                        {offer.jobType}
+                      </Text>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      color: '#f59e0b'
+                    }}>
+                      <AppstoreOutlined />
+                    </div>
+                    <div>
+                      <Text type="secondary" style={{ fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>
+                        Catégorie
+                      </Text>
+                      <Text strong style={{ color: '#1e293b' }}>
+                        {offer.jobCategory}
+                      </Text>
+                    </div>
+                  </div>
+                </div>
+                
+                <div style={{ marginTop: 'auto' }}>
+                  <Text strong style={{ display: 'block', color: '#1e293b', marginBottom: '12px' }}>
+                    Compétences Requises
+                  </Text>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {offer.skills.map((skill) => (
+                      <div key={skill} style={{
+                        background: '#f1f5f9',
+                        color: '#475569',
+                        fontSize: '0.85rem',
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        fontWeight: '500'
+                      }}>
+                        {skill}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Card Footer */}
+             <div
+                  style={{
+                    padding: '20px 25px',
+                    background: '#f8fafc',
+                    borderTop: '1px solid #f1f5f9',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}
+                >
+                  <Text
+                    type="secondary"
+                    style={{
+                      fontSize: '0.85rem',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <ClockCircleOutlined /> Publié il y a {getDaysAgo(offer.createdAt)} jours
+                  </Text>
 
-          <Typography.Text>
-            💰 <strong>Salaire :</strong>{' '}
-            <span style={{ color: '#10b981' }}>
-              {offer.minSalary} - {offer.maxSalary} {offer.salaryPeriod}
-            </span>
-          </Typography.Text>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <Button
+                      type="primary"
+                      onClick={() => navigate(`/employer/offers/${offer._id}/candidates`)}
+                      style={{
+                        background: 'linear-gradient(90deg, #6366f1 0%, #818cf8 100%)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '10px',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      <UserOutlined /> Candidats
+                    </Button>
+                   <Space>
+                    
+                      <Button
+                        shape="circle"
+                        icon={<EditOutlined />}
+                         type="primary"
+                        onClick={() => navigate(`/edit-job-offer/${offer._id}`)
+}
+                        style={{
+                          background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
+                          color: 'white',
+                          border: 'none',
+                          width: '40px',
+                          height: '40px'
+                        }}
+                      />
+                     
+                      <Button
+                        shape="circle"
+                        icon={<DeleteOutlined />}
+                        onClick={() => console.log('Delete')}
+                        style={{
+                          background: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
+                          color: 'white',
+                          border: 'none',
+                          width: '40px',
+                          height: '40px'
+                        }}
+                      />
+                    
+                      <Button
+                        shape="circle"
+                        icon={<EyeOutlined />}
+                        onClick={() => navigate(`/offers/${offer._id}`)}
+                        style={{
+                          background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+                          color: 'white',
+                          border: 'none',
+                          width: '40px',
+                          height: '40px'
+                        }}
+                      />
+                   
+                    </Space>
+                  </div>
+                </div>
 
-          <Typography.Text>
-            🎓 <strong>Expérience :</strong> {offer.experienceLevel}
-          </Typography.Text>
+            </Card>
+          </Col>
+        );
+      })}
+    </Row>
 
-          <Typography.Text>
-            🧠 <strong>Compétences :</strong>
-          </Typography.Text>
-          <div>
-            {offer.skills.map(skill => (
-              <Tag key={skill} color="geekblue" style={{ marginBottom: 4 }}>
-                {skill}
-              </Tag>
-            ))}
-          </div>
-        </Space>
-
-        <Divider style={{ margin: '20px 0' }} />
-
-        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Button
-            type="primary"
-            icon={<UserOutlined />}
-            onClick={() => navigate(`/employer/offers/${offer._id}/candidates`)}
-          >
-            Candidats
-          </Button>
-
-          <Space>
-            <Tooltip title="Modifier">
-              <Button
-                shape="circle"
-                icon={<EditOutlined />}
-                onClick={() => navigate(`/edit-job-offer/${offer._id}`)}
-              />
-            </Tooltip>
-            <Tooltip title="Supprimer">
-              <Button
-                shape="circle"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => console.log('Delete')}
-              />
-            </Tooltip>
-            <Tooltip title="Voir">
-              <Link to={`/job-offers/${offer._id}`}>
-                <Button shape="circle" icon={<EyeOutlined />} />
-              </Link>
-            </Tooltip>
-          </Space>
-        </Space>
-      </Card>
-    </Col>
-  ))}
-</Row>
 
   );
 };
@@ -628,7 +872,7 @@ const renderJobOffers = () => {
   ))}
            
 
-           <Col xs={24} lg={12}>
+ <Col xs={24} lg={12}>
   <Card 
     title="Candidatures par Mois" 
     bordered={false} 
@@ -737,8 +981,24 @@ const renderJobOffers = () => {
       return (
         <div className="my-jobs-section">
           <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-            <Title level={3}>Mes Offres d'Emploi</Title>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handlePostJob} size="large">Publier une nouvelle offre</Button>
+           <Title
+  level={3}
+  style={{
+    textAlign: 'left',
+    fontSize: '2.8rem',
+    fontWeight: 700,
+    marginBottom: '50px',
+    background: 'linear-gradient(90deg,rgb(220, 235, 254) 0%,rgb(104, 141, 235) 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    letterSpacing: '-0.5px',
+    width: '100%',
+  }}
+>
+  Mes Offres d'Emploi
+</Title>
+
+            {/* <Button type="primary" icon={<PlusOutlined />} onClick={handlePostJob} size="large">Publier une nouvelle offre</Button> */}
           </div>
           {renderJobOffers()}
         </div>
@@ -987,7 +1247,7 @@ const renderJobOffers = () => {
         {renderSidebar()}
       </Drawer>
 
-      {/* <Modal
+       {/* <Modal
         title="Publier une nouvelle offre d'emploi"
         open={isPostJobModalVisible}
         onCancel={() => setIsPostJobModalVisible(false)}
@@ -996,7 +1256,7 @@ const renderJobOffers = () => {
         className="post-job-modal"
       >
         <PostJobForm onJobPosted={handleJobPosted} employerId={user?._id} />
-      </Modal> */}
+      </Modal>  */}
 
       <Modal
         title="Mettre à jour le profil employeur"

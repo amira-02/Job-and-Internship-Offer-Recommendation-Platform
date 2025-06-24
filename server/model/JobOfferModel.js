@@ -59,9 +59,9 @@ const jobOfferSchema = new mongoose.Schema({
     // unique: true,
     sparse: true  // Permet les valeurs null
   },
-  status: {
+  Offerstatus: {
     type: String,
-    enum: ['active', 'closed', 'draft'],
+    enum: ['active', 'expired', 'draft'],
     default: 'active'
   },
   createdAt: {

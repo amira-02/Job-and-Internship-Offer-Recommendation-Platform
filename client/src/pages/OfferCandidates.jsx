@@ -192,200 +192,197 @@ const handleAnalyzeCandidates = async () => {
       ) : (
         <>
           <Row gutter={[24, 24]}>
-            {candidates.map((candidate) => {
-            const application = candidate.appliedOffers?.find(app => app._id === id); // `id` est l'id de l'offre
+  {candidates
+    .filter(candidate => {
+      const application = candidate.appliedOffers?.find(app => app._id === id);
+      return application?.status !== 'canceled';
+    })
+    .map((candidate) => {
+      const application = candidate.appliedOffers?.find(app => app._id === id);
+      const status = application?.status || 'pending';
 
-    const status = application?.status || 'pending'; // default fallback
-    const statusColor = status === 'accepted' ? 'green'
-                      : status === 'rejected' ? 'red'
-                      : status === 'canceled' ? 'gray'
-                      : 'geekblue';
+      const statusColor =
+        status === 'accepted' ? 'green' :
+        status === 'rejected' ? 'red' :
+        'geekblue';
 
-    const statusText = status === 'accepted' ? 'Accepté'
-                      : status === 'rejected' ? 'Refusé'
-                      : status === 'canceled' ? 'Annulé'
-                      : 'En attente';
-              
-              return (
-                <Col xs={24} sm={24} md={12} lg={8} xl={8} key={candidate._id}>
-                  <Badge.Ribbon 
-                    text={statusText} 
-                    color={statusColor}
-                    style={{ 
-                      fontSize: 13,
-                      fontWeight: 600,
-                      padding: '0 8px',
-                      height: 28,
-                      lineHeight: '28px'
-                    }}
-                  >
-                    <Card
-                      hoverable
-                      style={{ 
-                        borderRadius: 12,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        border: '1px solid #f0f0f0',
-                        transition: 'transform 0.3s, box-shadow 0.3s',
-                      }}
-                      bodyStyle={{ 
-                        padding: 20,
-                        flexGrow: 1,
-                        display: 'flex',
-                        flexDirection: 'column'
-                      }}
+      const statusText =
+        status === 'accepted' ? 'Accepté' :
+        status === 'rejected' ? 'Refusé' :
+        'En attente';
+
+      return (
+        <Col xs={24} sm={24} md={12} lg={8} xl={8} key={candidate._id}>
+          <Badge.Ribbon 
+            text={statusText} 
+            color={statusColor}
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              padding: '0 8px',
+              height: 28,
+              lineHeight: '28px'
+            }}
+          >
+            <Card
+              hoverable
+              style={{
+                borderRadius: 12,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                border: '1px solid #f0f0f0'
+              }}
+              bodyStyle={{
+                padding: 20,
+                flexGrow: 1,
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              {/* Avatar + Name */}
+              <div style={{ display: 'flex', marginBottom: 16 }}>
+                <Avatar
+                  size={64}
+                  src={`http://localhost:3000/api/joboffers/users/${candidate._id}/photo`}
+                  icon={!candidate.profilePicture && <UserOutlined />}
+                  style={{
+                    marginRight: 16,
+                    border: '2px solid #e6f7ff',
+                    backgroundColor: '#f5f5f5'
+                  }}
+                />
+                <div style={{ flex: 1 }}>
+                  <Title level={4} style={{ marginBottom: 4, color: '#1f2937' }}>
+                    {candidate.firstName} {candidate.lastName}
+                  </Title>
+                  <Space size={8} wrap>
+                    <Tag
+                      icon={candidate.isVerified ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                      color={candidate.isVerified ? 'green' : 'orange'}
+                      style={{ marginBottom: 4 }}
                     >
-                      <div style={{ display: 'flex', marginBottom: 16 }}>
-                        <Avatar
-                          size={64}
-                          src={`http://localhost:3000/api/joboffers/users/${candidate._id}/photo`}
+                      {candidate.isVerified ? 'Vérifié' : 'Non vérifié'}
+                    </Tag>
+                  </Space>
+                </div>
+              </div>
 
-                          icon={!candidate.profilePicture && <UserOutlined />}
-                          style={{ 
-                            marginRight: 16,
-                            border: '2px solid #e6f7ff',
-                            backgroundColor: '#f5f5f5'
-                          }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <Title level={4} style={{ marginBottom: 4, color: '#1f2937' }}>
-                            {candidate.firstName} {candidate.lastName}
-                            
-                          </Title> 
-                          
-                          <Space size={8} wrap>
-                            <Tag 
-                              icon={candidate.isVerified ? 
-                                <CheckCircleOutlined /> : <CloseCircleOutlined />} 
-                              color={candidate.isVerified ? 'green' : 'orange'}
-                              style={{ marginBottom: 4 }}
-                            >
-                              {candidate.isVerified ? 'Vérifié' : 'Non vérifié'}
-                            </Tag>
-                          </Space>
-                        </div>
-                      </div>
+              {/* Email / Location / Date */}
+              <div style={{ marginBottom: 16 }}>
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <MailOutlined style={{ color: '#1890ff', marginRight: 12, marginTop: 4 }} />
+                    <Text style={{ flex: 1 }}>{candidate.email}</Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <EnvironmentOutlined style={{ color: '#1890ff', marginRight: 12, marginTop: 4 }} />
+                    <Text style={{ flex: 1 }}>
+                      {candidate.address}, {candidate.postalCode} {candidate.city}
+                    </Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <CalendarOutlined style={{ color: '#1890ff', marginRight: 12, marginTop: 4 }} />
+                    <Text style={{ flex: 1 }}>
+                      Inscrit le {new Date(candidate.createdAt).toLocaleDateString('fr-FR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </Text>
+                  </div>
+                </Space>
+              </div>
 
-                      <div style={{ marginBottom: 16 }}>
-                        <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                            <MailOutlined style={{ color: '#1890ff', marginRight: 12, marginTop: 4 }} />
-                            <Text style={{ flex: 1 }}>{candidate.email}</Text>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                            <EnvironmentOutlined style={{ color: '#1890ff', marginRight: 12, marginTop: 4 }} />
-                            <Text style={{ flex: 1 }}>
-                              {candidate.address}, {candidate.postalCode} {candidate.city}
-                            </Text>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                            <CalendarOutlined style={{ color: '#1890ff', marginRight: 12, marginTop: 4 }} />
-                            <Text style={{ flex: 1 }}>
-                              Inscrit le {new Date(candidate.createdAt).toLocaleDateString('fr-FR', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
-                            </Text>
-                          </div>
-                        </Space>
-                      </div>
+              {/* CV Section */}
+              <Divider style={{ margin: '16px 0', borderColor: '#f0f0f0' }} />
+              <div style={{ marginBottom: 16 }}>
+                <Text strong style={{ display: 'block', marginBottom: 8, color: '#1f2937' }}>
+                  <FilePdfOutlined style={{ marginRight: 8 }} /> CV
+                </Text>
 
-                      <Divider style={{ margin: '16px 0', borderColor: '#f0f0f0' }} />
-                      
-                      <div style={{ marginBottom: 16 }}>
-                        <Text strong style={{ display: 'block', marginBottom: 8, color: '#1f2937' }}>
-                          <FilePdfOutlined style={{ marginRight: 8 }} /> CV
+                {candidate.cv?.length > 0 ? (
+                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                    {candidate.cv.map((cvItem, index) => (
+                      <Button
+                        key={index}
+                        type="link"
+                        icon={<FilePdfOutlined style={{ color: '#e74c3c' }} />}
+                        href={`http://localhost:3000/api/auth/cv/${candidate._id}/${index}`}
+                        target="_blank"
+                        style={{
+                          padding: 0,
+                          height: 'auto',
+                          textAlign: 'left',
+                          display: 'block'
+                        }}
+                      >
+                        <Text style={{ color: '#1890ff' }}>
+                          {cvItem.fileName || `CV_${candidate.lastName}_${index + 1}.pdf`}
                         </Text>
-                        
-                        {candidate.cv && candidate.cv.length > 0 ? (
-                          <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                            {candidate.cv.map((cvItem, index) => (
-                              <Button 
-                                key={index}
-                                type="link"
-                                icon={<FilePdfOutlined style={{ color: '#e74c3c' }} />}
-                                href={`http://localhost:3000/api/auth/cv/${candidate._id}/${index}`}
-                                target="_blank"
-                                style={{ 
-                                  padding: 0,
-                                  height: 'auto',
-                                  textAlign: 'left',
-                                  display: 'block'
-                                }}
-                              >
-                                <Text style={{ color: '#1890ff' }}>{cvItem.fileName || `CV_${candidate.lastName}_${index + 1}.pdf`}</Text>
-                              </Button>
-                            ))}
-                          </Space>
-                        ) : (
-                          <Text type="secondary">Aucun CV disponible</Text>
-                        )}
-                      </div>
+                      </Button>
+                    ))}
+                  </Space>
+                ) : (
+                  <Text type="secondary">Aucun CV disponible</Text>
+                )}
+              </div>
 
-                      <div style={{ marginTop: 'auto', paddingTop: 16 }}>
-                        <Divider style={{ margin: '16px 0', borderColor: '#f0f0f0' }} />
-                        <Space 
-                          size={12} 
-                          style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between',
-                            flexWrap: 'wrap'
-                          }}
-                        >
-                          <Popconfirm
-                            title="Confirmer l'acceptation de ce candidat ?"
-                            description="Un email de confirmation sera envoyé au candidat."
-                            onConfirm={() => handleDecision(id, candidate, 'accepted')}
-                            okText="Confirmer"
-                            cancelText="Annuler"
-                            okButtonProps={{ type: 'primary', danger: false }}
-                          >
-                            <Button 
-                              type="primary" 
-                              style={{ 
-                                flex: 1,
-                                backgroundColor: '#10b981',
-                                borderColor: '#10b981',
-                                minWidth: 120
-                              }}
-                              icon={<CheckOutlined />}
-                              disabled={candidate.status === 'accepted'}
-                            >
-                              Accepter
-                            </Button>
-                          </Popconfirm>
+              {/* Accept / Reject buttons */}
+              <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+                <Divider style={{ margin: '16px 0', borderColor: '#f0f0f0' }} />
+                <Space size={12} style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                  <Popconfirm
+                    title="Confirmer l'acceptation de ce candidat ?"
+                    description="Un email de confirmation sera envoyé au candidat."
+                    onConfirm={() => handleDecision(id, candidate, 'accepted')}
+                    okText="Confirmer"
+                    cancelText="Annuler"
+                  >
+                    <Button
+                      type="primary"
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#10b981',
+                        borderColor: '#10b981',
+                        minWidth: 120
+                      }}
+                      icon={<CheckOutlined />}
+                      disabled={status === 'accepted'}
+                    >
+                      Accepter
+                    </Button>
+                  </Popconfirm>
 
-                          <Popconfirm
-                            title="Confirmer le refus de ce candidat ?"
-                            description="Un email de refus sera envoyé au candidat."
-                            onConfirm={() => handleDecision(id, candidate, 'rejected')}
-                            okText="Confirmer"
-                            cancelText="Annuler"
-                            okButtonProps={{ type: 'primary', danger: true }}
-                          >
-                            <Button 
-                              danger
-                              style={{ 
-                                flex: 1,
-                                minWidth: 120
-                              }}
-                              icon={<CloseOutlined />}
-                              disabled={candidate.status === 'rejected'}
-                            >
-                              Refuser
-                            </Button>
-                          </Popconfirm>
-                        </Space>
-                      </div>
-                    </Card>
-                  </Badge.Ribbon>
-                </Col>
-              );
-            })}
-          </Row>
+                  <Popconfirm
+                    title="Confirmer le refus de ce candidat ?"
+                    description="Un email de refus sera envoyé au candidat."
+                    onConfirm={() => handleDecision(id, candidate, 'rejected')}
+                    okText="Confirmer"
+                    cancelText="Annuler"
+                  >
+                    <Button
+                      danger
+                      style={{
+                        flex: 1,
+                        minWidth: 120
+                      }}
+                      icon={<CloseOutlined />}
+                      disabled={status === 'rejected'}
+                    >
+                      Refuser
+                    </Button>
+                  </Popconfirm>
+                </Space>
+              </div>
+            </Card>
+          </Badge.Ribbon>
+        </Col>
+      );
+    })}
+</Row>
+
             {analyses.length > 0 && (
   <>
     <Divider />

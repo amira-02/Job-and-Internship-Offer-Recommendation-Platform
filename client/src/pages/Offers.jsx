@@ -577,7 +577,9 @@ useEffect(() => {
           ) : (
             <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
-  {currentOffers.map((offer) => {
+  {currentOffers
+  .filter(offer => !offer.Offerstatus || offer.Offerstatus === 'active')
+  .map((offer) => {
     const offerIdString = offer._id?.toString();
 
     const existingApplication = userProfile?.appliedOffers?.find(app =>

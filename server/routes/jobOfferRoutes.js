@@ -16,7 +16,7 @@ router.get('/employer', auth, jobOfferController.getEmployerJobOffers);
 router.get('/user/applied', auth, jobOfferController.getUserAppliedOffers);
 // Routes avec paramètres
 router.get('/:id', jobOfferController.getJobOfferById);
-router.put('/:id', auth, jobOfferController.updateJobOffer);
+router.put('/edit-job-offer/:id', auth, jobOfferController.updateJobOffer);
 router.delete('/:id', auth, jobOfferController.deleteJobOffer);
 
 router.post('/:id/apply', jobOfferController.applyToJobOffer);

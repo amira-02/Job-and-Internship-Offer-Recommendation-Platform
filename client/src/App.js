@@ -15,15 +15,12 @@ import ApplyForm from './pages/ApplyForm';
  import OfferCandidates from './pages/OfferCandidates';
 import OfferDetail from './pages/OfferDetail';
 import CvAnalysisPage from './pages/CvAnalysisPage';
-
-// Composant pour gérer l'affichage conditionnel du header
+import EditJobOffer from './pages/EditJobOffer';
 function AppContent() {
   const location = useLocation();
-  // const isEmployerDashboard = location.pathname === '/employer/dashboard';
 
   return (
     <div className="app">
-      {/* {!isEmployerDashboard && <Header />} */}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -38,8 +35,10 @@ function AppContent() {
         <Route path="/offers/:id/apply" element={<ApplyForm />} />   
         <Route path="/employer/offers/:id/candidates" element={<OfferCandidates />} />
          <Route path="/offers/:id" element={<OfferDetail />} />
-         {/* <Route path="/cv-analysis/:userId/:cvIndex" element={<CvAnalysisPage />} /> */}
          <Route path="/cv-analysis" element={<CvAnalysisPage />} />
+         <Route path="/edit-job-offer/:id" element={<EditJobOffer />} />
+
+
       </Routes>
     </div>
   );

@@ -83,18 +83,22 @@ exports.getAllJobOffers = async (req, res) => {
 
 // Récupérer une offre d'emploi par son ID
 exports.getJobOfferById = async (req, res) => {
-  console.log('Requête reçue pour l’ID:', req.params.id);  // <-- ajoute ça
   try {
-    const jobOffer = await JobOffer.findById(req.params.id).select('-__v');
-    if (!jobOffer) {
-      return res.status(404).json({ message: 'Offre non trouvée' });
+    const { id } = req.params;
+
+    const offer = await JobOffer.findById(id);
+
+    if (!offer) {
+      return res.status(404).json({ message: "Offre non trouvée" });
     }
-    res.status(200).json(jobOffer);
+
+    res.json(offer);
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'offre:', error);
-    res.status(500).json({ message: 'Erreur lors de la récupération de l\'offre', error: error.message });
+    console.error("Erreur lors de la récupération de l'offre :", error);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 
 // Rechercher des offres d'emploi
@@ -213,7 +217,8 @@ exports.createJobOffer = async (req, res) => {
       skills,
       experienceLevel,
       address,
-      country
+      country,
+       Offerstatus: 'active'
     });
 
     console.log('Tentative de sauvegarde de l\'offre:', jobOffer);
@@ -260,6 +265,17 @@ exports.updateJobOffer = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
+    // Vérifier que l'utilisateur est authentifié
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Non autorisé" });
+    }
+
+    // Vérifier que l'ID est valide (ObjectId MongoDB)
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: "ID invalide" });
+    }
+
+    // Tenter la mise à jour
     const jobOffer = await JobOffer.findOneAndUpdate(
       { _id: id, employer: req.user.id },
       updateData,
@@ -268,18 +284,18 @@ exports.updateJobOffer = async (req, res) => {
 
     if (!jobOffer) {
       return res.status(404).json({
-        message: 'Offre non trouvée ou vous n\'êtes pas autorisé à la modifier'
+        message: "Offre non trouvée ou accès interdit"
       });
     }
 
-    res.json({
-      message: 'Offre mise à jour avec succès',
+    return res.json({
+      message: "Offre mise à jour avec succès",
       jobOffer
     });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'offre:', error);
+    console.error("Erreur lors de la mise à jour de l'offre :", error);
     res.status(500).json({
-      message: 'Erreur lors de la mise à jour de l\'offre',
+      message: "Erreur serveur",
       error: error.message
     });
   }
