@@ -351,6 +351,7 @@ module.exports.getUserProfile = async (req, res) => {
       // isCurrentlyStudying: user.isCurrentlyStudying,
       country: user.country,
       city: user.city,
+       appliedOffers: user.appliedOffers || [],
       // zipCode: user.zipCode,
       address: user.address,
           cv: user.cv?.map(f => ({
@@ -363,6 +364,7 @@ module.exports.getUserProfile = async (req, res) => {
       languages: user.languages || [],
       certifications: user.certifications || [],
       profilePicture: profilePictureBase64
+      
     };
     console.log("Fetching profile for regular user.", userProfile);
     res.status(200).json(userProfile);
@@ -561,3 +563,4 @@ module.exports.uploadProfilePicture = async (req, res) => {
     });
   }
 };
+

@@ -317,77 +317,95 @@ const renderJobOffers = () => {
 
   return (
     <Row gutter={[24, 24]}>
-      {jobOffers.map(offer => (
-        <Col xs={24} sm={12} md={8} key={offer._id}>
-          <Card
-            hoverable
-            style={{
-              borderRadius: '16px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.05)',
-              transition: 'all 0.3s ease',
-            }}
-            title={
-              <div style={{ fontWeight: 600, fontSize: '18px', color: '#1f2937' }}>
-                {offer.jobTitle}
-              </div>
-            }
-            extra={
-              <Link to={`/job-offers/${offer._id}`} style={{ fontSize: '14px', color: '#3b82f6' }}>
-                <EyeOutlined style={{ marginRight: 4 }} />
-                Voir
-              </Link>
-            }
-            actions={[
-              <Tooltip title="Modifier">
-                <EditOutlined key="edit" onClick={() => navigate(`/edit-job-offer/${offer._id}`)} />
-              </Tooltip>,
-              <Tooltip title="Supprimer">
-                <DeleteOutlined key="delete" onClick={() => console.log('Delete')} />
-              </Tooltip>,
-            ]}
-          >
-            <p style={{ marginBottom: 8 }}>
-              <strong>📂 Catégorie :</strong>{' '}
-              <Tag color="blue">{offer.jobCategory}</Tag>
-            </p>
-            <p style={{ marginBottom: 8 }}>
-              <strong>🕘 Type :</strong>{' '}
-              <Tag color="green">{offer.jobType}</Tag>
-            </p>
-            <p style={{ marginBottom: 8 }}>
-              <strong>💰 Salaire :</strong>{' '}
-              <span style={{ color: '#10b981' }}>
-                {offer.minSalary} - {offer.maxSalary} {offer.salaryPeriod}
-              </span>
-            </p>
-            <p style={{ marginBottom: 8 }}>
-              <strong>📍 Localisation :</strong>{' '}
-              {offer.address}, {offer.country}
-            </p>
-            <p style={{ marginBottom: 8 }}>
-              <strong>🧠 Compétences :</strong>{' '}
-              {offer.skills.map(skill => (
-                <Tag key={skill} color="geekblue" style={{ marginBottom: 4 }}>{skill}</Tag>
-              ))}
-            </p>
-            <p style={{ marginBottom: 16 }}>
-              <strong>🎓 Expérience :</strong>{' '}
-              {offer.experienceLevel}
-            </p>
+  {jobOffers.map(offer => (
+    <Col xs={24} sm={12} md={8} key={offer._id}>
+      <Card
+        hoverable
+        style={{
+          borderRadius: '20px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+          padding: 16,
+          border: '1px solid #f0f0f0',
+        }}
+        bodyStyle={{ padding: 20 }}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Typography.Title level={4} style={{ margin: 0, color: '#1e293b' }}>
+            {offer.jobTitle}
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            {offer.address}, {offer.country}
+          </Typography.Text>
+        </div>
 
-            <Button
-              type="primary"
-              block
-              icon={<UserOutlined />}
-              onClick={() => navigate(`/employer/offers/${offer._id}/candidates`)}
-              style={{ marginTop: 12, borderRadius: '8px' }}
-            >
-              Voir les candidats
-            </Button>
-          </Card>
-        </Col>
-      ))}
-    </Row>
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <Space>
+            <Tag color="blue">{offer.jobCategory}</Tag>
+            <Tag color="green">{offer.jobType}</Tag>
+          </Space>
+
+          <Typography.Text>
+            💰 <strong>Salaire :</strong>{' '}
+            <span style={{ color: '#10b981' }}>
+              {offer.minSalary} - {offer.maxSalary} {offer.salaryPeriod}
+            </span>
+          </Typography.Text>
+
+          <Typography.Text>
+            🎓 <strong>Expérience :</strong> {offer.experienceLevel}
+          </Typography.Text>
+
+          <Typography.Text>
+            🧠 <strong>Compétences :</strong>
+          </Typography.Text>
+          <div>
+            {offer.skills.map(skill => (
+              <Tag key={skill} color="geekblue" style={{ marginBottom: 4 }}>
+                {skill}
+              </Tag>
+            ))}
+          </div>
+        </Space>
+
+        <Divider style={{ margin: '20px 0' }} />
+
+        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Button
+            type="primary"
+            icon={<UserOutlined />}
+            onClick={() => navigate(`/employer/offers/${offer._id}/candidates`)}
+          >
+            Candidats
+          </Button>
+
+          <Space>
+            <Tooltip title="Modifier">
+              <Button
+                shape="circle"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/edit-job-offer/${offer._id}`)}
+              />
+            </Tooltip>
+            <Tooltip title="Supprimer">
+              <Button
+                shape="circle"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => console.log('Delete')}
+              />
+            </Tooltip>
+            <Tooltip title="Voir">
+              <Link to={`/job-offers/${offer._id}`}>
+                <Button shape="circle" icon={<EyeOutlined />} />
+              </Link>
+            </Tooltip>
+          </Space>
+        </Space>
+      </Card>
+    </Col>
+  ))}
+</Row>
+
   );
 };
 

@@ -10,35 +10,58 @@ const { sendConfirmationEmail,sendAcceptanceEmail, sendRejectionEmail } = requir
 
 
 
-exports.applyToJobOffer = async (req, res) => {
+exports.applyToJobOffer = async (req, res) => { 
   const { id } = req.params;
   const { email } = req.body;
+
   try {
     let user = await User.findOne({ email });
+
     if (!user) {
       user = new User({ email, appliedOffers: [] });
       await user.save();
     }
-    const offer = await JobOffer.findById(id);
-    if (!offer) return res.status(404).json({ message: 'Offre non trouvée' });
 
-    if (!user.appliedOffers.includes(id)) {
-      user.appliedOffers.push(id);
-      await user.save();
+    const offer = await JobOffer.findById(id);
+    if (!offer) {
+      return res.status(404).json({ message: 'Offre non trouvée' });
     }
+
+    // Vérifier si l'utilisateur a déjà postulé à cette offre
+    const existingApplication = user.appliedOffers.find(app =>
+      app._id?.toString() === id
+    );
+
+    if (existingApplication) {
+      if (existingApplication.status === 'pending' || existingApplication.status === 'accepted') {
+        return res.status(400).json({ message: `Vous avez déjà postulé à cette offre (${existingApplication.status})` });
+      }
+
+      // Si le statut est "canceled" ou autre, on le remet à "pending"
+      existingApplication.status = 'pending';
+    } else {
+      // Ajout normal d'une nouvelle candidature avec statut initial "pending"
+      user.appliedOffers.push({ _id: id, status: 'pending' });
+    }
+
+    await user.save();
+
+    // Ajouter l'utilisateur dans la liste des candidats de l'offre s'il n'y est pas déjà
     if (!offer.candidates.includes(user._id)) {
       offer.candidates.push(user._id);
       await offer.save();
     }
 
-await sendConfirmationEmail(email, offer.title || offer.jobTitle)
+    await sendConfirmationEmail(email, offer.title || offer.jobTitle);
 
     res.json({ message: 'Candidature envoyée avec succès' });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
+
 
 // Récupérer toutes les offres d'emploi
 exports.getAllJobOffers = async (req, res) => {
@@ -463,3 +486,18 @@ exports.cancelApplication = async (req, res) => {
   }
 };
 
+
+exports.getUserPhoto = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (user && user.profilePicture && user.profilePicture.data) {
+      res.contentType(user.profilePicture.contentType);
+      res.send(user.profilePicture.data);
+    } else {
+      res.status(404).send('Image non trouvée');
+    }
+  } catch (err) {
+    console.error('Erreur chargement image:', err);
+    res.status(500).send('Erreur serveur');
+  }
+};

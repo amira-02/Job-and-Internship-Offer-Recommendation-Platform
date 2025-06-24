@@ -10,7 +10,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-
+import { useCookies } from 'react-cookie';
 const jobTypes = [
   'Fulltime',
   'Part time',
@@ -262,6 +262,36 @@ const Offers = () => {
   };
 
   const navigate = useNavigate();
+// import { useEffect, useState } from 'react';
+
+
+const [cookies] = useCookies(['jwt']);
+const [userProfile, setUserProfile] = useState(null);
+
+useEffect(() => {
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/profile', {
+        method: 'GET',
+        credentials: 'include', // pour envoyer les cookies si backend les utilise
+        headers: {
+          Authorization: `Bearer ${cookies.jwt}`,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur ${response.status}`);
+      }
+
+      const data = await response.json();
+      setUserProfile(data);
+    } catch (err) {
+      console.error('Erreur chargement profil:', err);
+    }
+  };
+
+  if (cookies.jwt) fetchProfile();
+}, [cookies.jwt]);
 
   return (
     <div
@@ -547,123 +577,118 @@ const Offers = () => {
           ) : (
             <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
-              {currentOffers.map((offer) => {
-                // Temporairement, affichons l'objet offre en brut pour le débogage
-                /* Code de débogage (commenté)
-                return (
-                  <div key={offer._id} style={{ background: '#fff', padding: 16, margin: 8, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                    <pre>{JSON.stringify(offer, null, 2)}</pre>
-                  </div>
-                );
-                */
-                // Code de la carte d'offre original (décommenté et mis à jour)
-                const isActive = activeCardId === offer._id;
+  {currentOffers.map((offer) => {
+    const offerIdString = offer._id?.toString();
 
-                // Adapter l'accès aux propriétés pour gérer les deux structures (ancienne et nouvelle)
-                const title = offer.jobTitle || offer.title;
-                const company = offer.employer || offer.company;
-                const type = offer.jobType || offer.contractType || 'Fulltime';
-                const description = offer.jobDescription || offer.description;
+    const existingApplication = userProfile?.appliedOffers?.find(app =>
+  app._id?.toString() === offer._id?.toString()
+);
 
-                // Adapter l'affichage de la localisation
-                const locationDisplay = (offer.address && offer.country)
-                  ? `${offer.address}, ${offer.country}`
-                  : offer.address
-                    ? offer.address
-                    : offer.country
-                      ? offer.country
-                      : offer.location || ''; // Fallback to old location if new not present
 
-                // Adapter l'affichage du salaire
-                const salaryDisplay = (offer.minSalary && offer.maxSalary)
-                  ? `${offer.minSalary} - ${offer.maxSalary} ${offer.salaryPeriod || ''}`.trim()
-                  : offer.minSalary
-                    ? `${offer.minSalary} ${offer.salaryPeriod || ''}`.trim()
-                    : offer.maxSalary
-                      ? `${offer.maxSalary} ${offer.salaryPeriod || ''}`.trim()
-                      : offer.salary || ''; // Fallback to old salary if new not present
+    const status = existingApplication?.status;
+    const isBlocked = status === 'pending' || status === 'accepted';
 
-                return (
-                  <div
-                    key={offer._id}
-                    style={{
-                      background: '#fff',
-                      borderRadius: 16,
-                      padding: 24,
-                      position: 'relative',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      minHeight: 260,
-                      boxShadow: isActive
-                        ? '0 8px 32px rgba(26,127,100,0.18)'
-                        : '0 4px 16px rgba(191,191,191,0.10)',
-                      transform: isActive ? 'scale(1.025)' : 'scale(1)',
-                      transition: 'box-shadow 0.18s, transform 0.18s',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={() => setActiveCardId(offer._id)}
-                    onMouseLeave={() => setActiveCardId(null)}
-                    onTouchStart={() => setActiveCardId(offer._id)}
-                    onTouchEnd={() => setActiveCardId(null)}
-                  >
-                    {/* Utiliser les variables adaptées */}
-                    <h3 style={{ fontWeight: 700, fontSize: 20, margin: '32px 0 8px 0' }}>{title}</h3>
-                    <div style={{ color: '#1a1a1a', fontWeight: 600, marginBottom: 8 }}>{company}</div>
-                    <span style={{ position: 'absolute', top: 16, left: 16, background: '#e6f4ea', color: '#1a1a1a', borderRadius: 8, padding: '2px 10px', fontSize: 12, fontWeight: 600 }}>{type}</span>
+    const isActive = activeCardId === offer._id;
+    const title = offer.jobTitle || offer.title;
+    const company = offer.employer || offer.company;
+    const type = offer.jobType || offer.contractType || 'Fulltime';
+    const description = offer.jobDescription || offer.description;
 
-                    <div style={{ color: '#888', fontSize: 15, marginBottom: 8 }}>{locationDisplay}</div>
-                    <div style={{ color: '#222', fontSize: 15, marginBottom: 8 }}>
-                      {truncate(description || '', 90)}
-                      {description && description.length > 90 && (
-                        <button onClick={() => handleShowMore(description)} style={{ color: '#1a1a1a', background: 'none', border: 'none', marginLeft: 8, cursor: 'pointer', fontWeight: 600 }}>
-                          Voir plus
-                        </button>
-                      )}
-                    </div>
-                    <div style={{ color: '#1a1a1a', fontWeight: 600, marginBottom: 8 }}>{salaryDisplay}</div>
-                   <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', alignSelf: 'flex-end' }}>
-                    <button
-                      style={{ 
-                        background: '#e8f1fa', 
-                        color: '#1976d2', 
-                        border: 'none', 
-                        borderRadius: 10, 
-                        padding: '8px 24px', 
-                        fontWeight: 600, 
-                        cursor: 'pointer' 
-                      }}
-                      onClick={() => navigate(`/offers/${offer._id}`)}
-                    >
-                      Voir détails
-                    </button>
+    const locationDisplay = (offer.address && offer.country)
+      ? `${offer.address}, ${offer.country}`
+      : offer.address || offer.country || offer.location || '';
 
-                  <button
-                    style={{ 
-                      background: '#e8f1fa', 
-                      color: '#1976d2', 
-                      border: 'none', 
-                      borderRadius: 10, 
-                      padding: '8px 24px', 
-                      fontWeight: 600, 
-                      cursor: 'pointer' 
-                    }}
-                    onClick={() => {
-                      if (offer.source === "Option Carriere" && offer.sourceUrl) {
-                        window.open(offer.sourceUrl, '_blank'); // 🔗 Redirige vers site externe
-                      } else {
-                        navigate(`/offers/${offer._id}/apply`); // 🔗 Page interne d'application
-                      }
-                    }}
-                  >
-                    APPLY
-                  </button>
+    const salaryDisplay = (offer.minSalary && offer.maxSalary)
+      ? `${offer.minSalary} - ${offer.maxSalary} ${offer.salaryPeriod || ''}`.trim()
+      : offer.minSalary
+        ? `${offer.minSalary} ${offer.salaryPeriod || ''}`.trim()
+        : offer.maxSalary
+          ? `${offer.maxSalary} ${offer.salaryPeriod || ''}`.trim()
+          : offer.salary || '';
 
-                  </div>
+    return (
+      <div
+        key={offer._id}
+        style={{
+          background: '#fff',
+          borderRadius: 16,
+          padding: 24,
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 260,
+          boxShadow: isActive
+            ? '0 8px 32px rgba(26,127,100,0.18)'
+            : '0 4px 16px rgba(191,191,191,0.10)',
+          transform: isActive ? 'scale(1.025)' : 'scale(1)',
+          transition: 'box-shadow 0.18s, transform 0.18s',
+          cursor: 'pointer',
+        }}
+        onMouseEnter={() => setActiveCardId(offer._id)}
+        onMouseLeave={() => setActiveCardId(null)}
+        onTouchStart={() => setActiveCardId(offer._id)}
+        onTouchEnd={() => setActiveCardId(null)}
+      >
+        <h3 style={{ fontWeight: 700, fontSize: 20, margin: '32px 0 8px 0' }}>{title}</h3>
+        <div style={{ color: '#1a1a1a', fontWeight: 600, marginBottom: 8 }}>{company}</div>
+        <span style={{ position: 'absolute', top: 16, left: 16, background: '#e6f4ea', color: '#1a1a1a', borderRadius: 8, padding: '2px 10px', fontSize: 12, fontWeight: 600 }}>{type}</span>
 
-                  </div>
-                );
-              })}
-            </div>
+        <div style={{ color: '#888', fontSize: 15, marginBottom: 8 }}>{locationDisplay}</div>
+        <div style={{ color: '#222', fontSize: 15, marginBottom: 8 }}>
+          {truncate(description || '', 90)}
+          {description && description.length > 90 && (
+            <button onClick={() => handleShowMore(description)} style={{ color: '#1a1a1a', background: 'none', border: 'none', marginLeft: 8, cursor: 'pointer', fontWeight: 600 }}>
+              Voir plus
+            </button>
+          )}
+        </div>
+        <div style={{ color: '#1a1a1a', fontWeight: 600, marginBottom: 8 }}>{salaryDisplay}</div>
+
+        <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', alignSelf: 'flex-end' }}>
+          <button
+            style={{
+              background: '#e8f1fa',
+              color: '#1976d2',
+              border: 'none',
+              borderRadius: 10,
+              padding: '8px 24px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+            onClick={() => navigate(`/offers/${offer._id}`)}
+          >
+            Voir détails
+          </button>
+
+          <button
+            disabled={isBlocked}
+            style={{
+              background: isBlocked ? "#f5f5f5" : "#e8f1fa",
+              color: isBlocked ? "#999" : "#1976d2",
+              border: "none",
+              borderRadius: 10,
+              padding: "8px 24px",
+              fontWeight: 600,
+              cursor: isBlocked ? "not-allowed" : "pointer",
+              transition: "all 0.2s ease",
+            }}
+            onClick={() => {
+              if (isBlocked) return;
+              if (offer.source === "Option Carriere" && offer.sourceUrl) {
+                window.open(offer.sourceUrl, "_blank");
+              } else {
+                navigate(`/offers/${offer._id}/apply`);
+              }
+            }}
+          >
+            {isBlocked ? `Déjà postulé (${status})` : "Postuler"}
+          </button>
+        </div>
+      </div>
+    );
+  })}
+</div>
+
             {/* Pagination moderne */}
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, alignItems: 'center', gap: 8 }}>
               <button

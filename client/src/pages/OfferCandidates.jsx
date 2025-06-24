@@ -240,7 +240,8 @@ const handleAnalyzeCandidates = async () => {
                       <div style={{ display: 'flex', marginBottom: 16 }}>
                         <Avatar
                           size={64}
-                          src={`http://localhost:3000/api/users/${candidate._id}/photo`}
+                          src={`http://localhost:3000/api/joboffers/users/${candidate._id}/photo`}
+
                           icon={!candidate.profilePicture && <UserOutlined />}
                           style={{ 
                             marginRight: 16,
@@ -251,7 +252,8 @@ const handleAnalyzeCandidates = async () => {
                         <div style={{ flex: 1 }}>
                           <Title level={4} style={{ marginBottom: 4, color: '#1f2937' }}>
                             {candidate.firstName} {candidate.lastName}
-                          </Title>
+                            
+                          </Title> 
                           
                           <Space size={8} wrap>
                             <Tag 
